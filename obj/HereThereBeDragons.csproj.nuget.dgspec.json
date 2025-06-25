@@ -1,25 +1,31 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons\\HereThereBeDragons\\HereThereBeDragons.csproj": {}
+    "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons2\\HereThereBeDragons.csproj": {}
   },
   "projects": {
-    "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons\\HereThereBeDragons\\HereThereBeDragons.csproj": {
+    "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons2\\HereThereBeDragons.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons\\HereThereBeDragons\\HereThereBeDragons.csproj",
+        "projectUniqueName": "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons2\\HereThereBeDragons.csproj",
         "projectName": "HereThereBeDragons",
-        "projectPath": "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons\\HereThereBeDragons\\HereThereBeDragons.csproj",
+        "projectPath": "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons2\\HereThereBeDragons.csproj",
         "packagesPath": "C:\\Users\\jcbco\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons\\HereThereBeDragons\\obj\\",
+        "outputPath": "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons2\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\jcbco\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\jcbco\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net9.0-windows"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -59,7 +65,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Users\\jcbco\\.dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

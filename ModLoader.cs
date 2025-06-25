@@ -18,9 +18,12 @@ public class ModLoader
         {
             ancestryFeat.Subfeats.Add(AddDragonBloodHeritage());
         }
-
         foreach (Feat feat in DragonBlood.CreateDragonbloodFeats())
         {
+            ModManager.AddFeat(feat);
+        }
+        foreach (Feat feat in DragonDeityDomain.CreateDomainFeats())
+        { 
             ModManager.AddFeat(feat);
         }
     }
@@ -52,7 +55,8 @@ public class ModLoader
                     sheet.Ancestries.Add(ModData.Traits.Dragonblood);
                     sheet.AddSelectionOption(new SingleFeatSelectionOption("DraconicExemplar", "Draconic Exemplar", -1, feat => feat.HasTrait(ModData.Traits.DraconicExemplar)));
                 }
-            );
+            )
+            .WithOnCreature(creature => creature.Traits.Add(ModData.Traits.Dragonblood));
         return dragonBloodHeritage;
     }
 }

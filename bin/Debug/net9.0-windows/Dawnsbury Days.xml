@@ -2585,6 +2585,11 @@
             Runes can't be etched onto this item.
             </summary>
         </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.SpecialAbility">
+            <summary>
+            This action should be shown in the OFFENSE block even though it technically also counts as a spell.
+            </summary>
+        </member>
         <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.NonSummonable">
             <summary>
             This creature is not a valid option for summon spells.
@@ -2600,14 +2605,84 @@
             Attack rolls made using this action don't benefit from effects like Bless or Bane.
             </summary>
         </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.UsableThroughConfusion">
+            <summary>
+            This combat action can be used even if the owning creature is confused, which might normally prevent this action.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.UnpreventableHealing">
+            <summary>
+            This is a divine or story-based healing that can't be prevented by effects such as the Life Oracle's curse.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.ReactiveAttack">
+            <summary>
+            This combat action does not contribute to multiple attack penalty nor applies it.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.DoNotRecheckTargetRequirements">
+            <summary>
+            This combat action should not recheck the legality of its target as it's being executed and simply apply, even if the targets have become illegal.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.UsableEvenWhenUnconsciousOrParalyzed">
+            <summary>
+            This combat action can be taken even if you're unconscious or paralyzed, such as commanding your mature animal companion to take an action on its own.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.DoesNotPreventDelay">
+            <summary>
+            You can take an action with this trait, and you will still be able to Delay afterwards, as though you didn't take any action.
+            </summary>
+        </member>
         <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.SpellLikeAbility">
             <summary>
             A spell-like ability receives a bonus or penalty to damage from Inferior/Weak/Elite/Supreme as though it were a spell.
             </summary>
         </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.CountsAsSpellForImmunities">
+            <summary>
+            This combat action counts as a spell for the purposes of spell resistance and spell immunity, such as a spell-like effect from a trap or an item.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.PreferredAnimalCompanion">
+            <summary>
+            A feat with this trait is used as a choice for the Beastmeaster's selection of animal companion in precombat preparations.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.MonkWeapon">
+            <summary>
+            This counts as a monk weapon for the purposes of Brawling Focus. Mods may have further uses for this.
+            </summary>
+        </member>
         <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.SomaticOnly">
             <summary>
             This spell is manipulate and it isn't concentrate.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.ElementalOverlapFeat">
+            <summary>
+            This is a subfeat that's a copy of an existing kineticist impulse, usable for the kineticist's Elemental Overlap feat.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.GenericImpulse">
+            <summary>
+            This impulse can be used by a kineticist of any element.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.AttackableShell">
+            <summary>
+            This creature represents an attackable shell around its owning creature, such as Molten Wire or a Resilient Sphere.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.Silver">
+            <summary>
+            This combat action counts as silver for the purposes of weakness and resistance. This weapon imbues its Strikes with the silver trait.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.Enumerations.Trait.NoHeightening">
+            <summary>
+            This spell or impulses doesn't have any increased effects when heightened.
             </summary>
         </member>
         <member name="T:Dawnsbury.Core.Mechanics.Enumerations.TraitProperties">
@@ -2871,6 +2946,11 @@
             Triggers when you would die due to becoming dying 4 (or more, if you have Diehard etc.). The second QEffect is the DYING QEffect. Return true, if this death should be prevented. It is your responsibility to ensure that the dying value in the second QEffect decreases so this doesn't immediately trigger again.
             </summary>
         </member>
+        <member name="P:Dawnsbury.Core.Mechanics.QEffect.PreventDeathDueToDyingAsync">
+            <summary>
+            An async version of PreventDeathDueToDying. Triggers when you would die due to becoming dying 4 (or more, if you have Diehard etc.). The second QEffect is the DYING QEffect. Return true, if this death should be prevented. It is your responsibility to ensure that the dying value in the second QEffect decreases so this doesn't immediately trigger again.
+            </summary>
+        </member>
         <member name="M:Dawnsbury.Core.Mechanics.QEffect.PersistentDamage(Dawnsbury.Core.Roller.DiceFormula,Dawnsbury.Core.Mechanics.Enumerations.DamageKind)">
             <summary>
             Creates a QEffect that deals persistent damage (ongoing damage) at the end of each turn. See also <see cref="M:Dawnsbury.Core.Mechanics.QEffect.RollPersistentDamageRecoveryCheck(System.Boolean)"/> and <see cref="M:Dawnsbury.Core.Mechanics.QEffect.GetPersistentDamageKind"/> for additional
@@ -2890,6 +2970,11 @@
         <member name="M:Dawnsbury.Core.Mechanics.QEffect.ImmunityToTargeting(Dawnsbury.Core.CombatActions.ActionId)">
             <summary>
             Creates a QEffect that makes its owner untargetable by actions with the given ACTION ID for the rest of the encounter. 
+            </summary>
+        </member>
+        <member name="M:Dawnsbury.Core.Mechanics.QEffect.Stunned">
+            <summary>
+            Creates the Stunned condition with an indefinite duration that takes away all of the creature's actions and reactions.
             </summary>
         </member>
         <member name="P:Dawnsbury.Core.Mechanics.QEffect.ReferencedSpell">
@@ -3425,6 +3510,11 @@
             If this is not 0, then this creature's minimum Athletics modifier is this number, unless its own modifier is greater.
             </summary>
         </member>
+        <member name="P:Dawnsbury.Core.Mechanics.QEffect.BattleformMinimumAcrobaticsModifier">
+            <summary>
+            If this is not 0, then this creature's minimum Acrobatics modifier is this number, unless its own modifier is greater.
+            </summary>
+        </member>
         <member name="P:Dawnsbury.Core.Mechanics.QEffect.AfterYouAreHealed">
             <summary>
             Triggers after you are healed by a COMBAT ACTION for AMOUNT of HP, which is at least 1.
@@ -3524,6 +3614,11 @@
             Both the owner creature and other creatures can attack the shell; and the shell takes damage from area attacks. The shell is immune to all effects except damage.
             </summary>
         </member>
+        <member name="P:Dawnsbury.Core.Mechanics.QEffect.AdjustStrikeAction">
+            <summary>
+            When a Strike COMBAT ACTION is being generated, this action applies to that Strike. For example, you can use this to add additional traits to that strike.
+            </summary>
+        </member>
         <member name="M:Dawnsbury.Core.Mechanics.QEffect.AddGrantingOfTechnical(System.Func{Dawnsbury.Core.Creatures.Creature,System.Boolean},System.Action{Dawnsbury.Core.Mechanics.QEffect})">
             <summary>
             Adds a state-check action to this QEffect which grants an ephemeral technical QEffect to some or all creatures on the battlefield.
@@ -3576,7 +3671,7 @@
         </member>
         <member name="F:Dawnsbury.Core.Mechanics.QEffectId.CannotTakeReactions">
             <summary>
-            The effect owner will always return as being unable to take a reaction when another ability checks if they're eligable to do so.
+            The effect owner will always return as being unable to take a reaction when another ability checks if they're eligible to do so.
             </summary>
         </member>
         <member name="F:Dawnsbury.Core.Mechanics.QEffectId.Mobility">
@@ -3617,12 +3712,12 @@
         </member>
         <member name="F:Dawnsbury.Core.Mechanics.QEffectId.HideInPlainSight">
             <summary>
-            The effect owner can take the Hide action without any special condtions, such as having the concealed QEffect.
+            The effect owner can take the Hide action without any special conditions, such as having the concealed QEffect.
             </summary>
         </member>
         <member name="F:Dawnsbury.Core.Mechanics.QEffectId.Swimming">
             <summary>
-            The effect owner can move through deep and shallow water tiles without penalty, and gets reduced penalties during Aquotic combat levels.
+            The effect owner can move through deep and shallow water tiles without penalty, and gets reduced penalties during Aquatic combat levels.
             </summary>
         </member>
         <member name="F:Dawnsbury.Core.Mechanics.QEffectId.FleeingAllDanger">
@@ -3655,6 +3750,11 @@
             The effect owner can stand as a free action, and doing so doesn't provoke attacks of opportunity.
             </summary>
         </member>
+        <member name="F:Dawnsbury.Core.Mechanics.QEffectId.YourResistancesAreReducedBy2">
+            <summary>
+            Reduces all of your resistance by the <see cref="P:Dawnsbury.Core.Mechanics.QEffect.Value"/> of this QEffect. The name is misleading, the Value can be something other than "2".
+            </summary>
+        </member>
         <member name="F:Dawnsbury.Core.Mechanics.QEffectId.Incorporeal">
             <summary>
             The effect owner can pass through enemy creatures.
@@ -3678,6 +3778,46 @@
         <member name="F:Dawnsbury.Core.Mechanics.QEffectId.IsAstralWalking">
             <summary>
             Technical QEffect that means that the creature isn't really located on its tile and can't be affected by damaging effects on that tile.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.QEffectId.DebilitationSpeedPenalty">
+            <summary>
+            This effect represents a Speed penalty from a rogue's debilitating strike.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.QEffectId.DebilitationEnfeebled1">
+            <summary>
+            This effect represents Enfeebled from a rogue's debilitating strike.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.QEffectId.TiltedScales">
+            <summary>
+            For Zetogeki's ability.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.QEffectId.ZetogekiStoredKineticEnergy">
+            <summary>
+            For Zetogeki's ability
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.QEffectId.DurationStunned">
+            <summary>
+            The effect owner loses all actions at the beginning of its turn for as long as it retains this effect.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.QEffectId.DeathWard">
+            <summary>
+            The effect owner is under the effect of the Death Ward spell and its doomed condition has no effect.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.QEffectId.IgnoreAoOWhenMoving">
+            <summary>
+            The effect owner never provokes attacks of opportunity when Striding.
+            </summary>
+        </member>
+        <member name="F:Dawnsbury.Core.Mechanics.QEffectId.WyvernVenom">
+            <summary>
+            Represents the Wyvern Venom affliction (as per the spell).
             </summary>
         </member>
         <member name="M:Dawnsbury.Core.Mechanics.Rules.DeathRules.ShouldDieImmediately(Dawnsbury.Core.Creatures.Creature)">
@@ -4382,6 +4522,11 @@
             Triggers after any damage is dealt into this square.
             </summary>
         </member>
+        <member name="P:Dawnsbury.Core.Tiles.TileQEffect.AfterDamageIsDealtHereAsync">
+            <summary>
+            Triggers after any damage is dealt into this square.
+            </summary>
+        </member>
         <member name="P:Dawnsbury.Core.Tiles.TileQEffect.SeekDC">
             <summary>
             If not zero, then this is the DC that a Seek action must beat to activate this TileQEffect's <see cref="P:Dawnsbury.Core.Tiles.TileQEffect.WhenSeeked"/> action.
@@ -4506,6 +4651,33 @@
             Draws the scrollbar and ends the scissor rectangle.
             </summary>
             <param name="nativeContentHeight">Total height of the content, in pixels, in native resolution scale.</param>
+        </member>
+        <member name="P:Dawnsbury.Display.Controls.Statblocks.CreatureStatblock.CreatureStatblockSectionGenerators">
+            <summary>
+            Each creature's stat block consists of sections outputted in order by the generators in the list. Mods can insert, update or delete from this list. 
+            </summary>
+        </member>
+        <member name="T:Dawnsbury.Display.Controls.Statblocks.CreatureStatblockSectionGenerator">
+            <summary>
+            A single <see cref="T:Dawnsbury.Display.Controls.Statblocks.CreatureStatblockSectionGenerator"/> is responsible for producing a section of a creature's stat block, such as "OFFENSE", "DEFENSE" or "SPELLCASTING".
+            </summary>
+        </member>
+        <member name="P:Dawnsbury.Display.Controls.Statblocks.CreatureStatblockSectionGenerator.Name">
+            <summary>
+            This will be the section title. Write it in Sentence case, such "Spellcasting" or "Impulses". It will be converted to the appropriate case later.
+            </summary>
+        </member>
+        <member name="P:Dawnsbury.Display.Controls.Statblocks.CreatureStatblockSectionGenerator.GenerateText">
+            <summary>
+            Generates the text of the section of the CREATURE's stat block. If it returns null or whitespace, the section will be skipped.
+            </summary>
+        </member>
+        <member name="M:Dawnsbury.Display.Controls.Statblocks.CreatureStatblockSectionGenerator.#ctor(System.String,System.Func{Dawnsbury.Core.Creatures.Creature,System.String})">
+            <summary>
+            A single <see cref="T:Dawnsbury.Display.Controls.Statblocks.CreatureStatblockSectionGenerator"/> is responsible for producing a section of a creature's stat block, such as "OFFENSE", "DEFENSE" or "SPELLCASTING".
+            </summary>
+            <param name="name">This will be the section title. Write it in Sentence case, such "Spellcasting" or "Impulses". It will be converted to the appropriate case later.</param>
+            <param name="generateText">A function that generates the text of the section of the CREATURE's stat block. If it returns null or whitespace, the section will be skipped.</param>
         </member>
         <member name="M:Dawnsbury.Display.DragAndDrop.ItemSlotReceptacle.RemoveItemFromSource(Dawnsbury.Display.DragAndDrop.DraggedItem)">
             <summary>

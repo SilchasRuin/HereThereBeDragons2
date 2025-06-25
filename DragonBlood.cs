@@ -1,4 +1,3 @@
-using Dawnsbury;
 using Dawnsbury.Audio;
 using Dawnsbury.Auxiliary;
 using Dawnsbury.Core;
@@ -9,14 +8,18 @@ using Dawnsbury.Core.CharacterBuilder.FeatsDb.Common;
 using Dawnsbury.Core.CharacterBuilder.Selections.Options;
 using Dawnsbury.Core.CharacterBuilder.Spellcasting;
 using Dawnsbury.Core.CombatActions;
+using Dawnsbury.Core.Coroutines.Options;
+using Dawnsbury.Core.Coroutines.Requests;
 using Dawnsbury.Core.Creatures;
 using Dawnsbury.Core.Creatures.Parts;
+using Dawnsbury.Core.Intelligence;
 using Dawnsbury.Core.Mechanics;
 using Dawnsbury.Core.Mechanics.Core;
 using Dawnsbury.Core.Mechanics.Enumerations;
 using Dawnsbury.Core.Mechanics.Targeting;
 using Dawnsbury.Core.Mechanics.Treasure;
 using Dawnsbury.Core.Possibilities;
+using Dawnsbury.Core.Tiles;
 using Dawnsbury.Display;
 using Dawnsbury.Display.Illustrations;
 using Dawnsbury.Display.Text;
@@ -57,8 +60,8 @@ public class DragonBlood
                 "Omen dragons are bound to see the future—nebulous though it might be—at all times. Visions of the future hound them like a quiet song that never stops playing in their minds. Omen dragons have a natural compulsion to share the futures they see, but they have no compunctions about what the visions show and share their knowledge with the wicked as readily as the virtuous.", "The power of the omen dragon causes you to deal mental damage in a cone if you choose a breath weapon and is connected to the Occult tradition.",
                 [ModData.Traits.DraconicExemplar, Trait.Occult, Trait.Mental, Trait.Will], null);
             yield return draconicExemplarOmen;
-            Feat draconicExemplarHeaven = new Feat(ModManager.RegisterFeatName("HeavenExemplar", "Heaven"),
-                "Heaven dragons are protectors of the innocent and enemies of the wicked. Wise and with vast knowledge, they offer their advice to the worthy who come to them in their homes among the mountain peaks.", "The power of the heaven dragon causes you to deal electricity damage in a line if you choose a breath weapon and is connected to the Divine tradition.",
+            Feat draconicExemplarHeaven = new Feat(ModManager.RegisterFeatName("HeavenlyExemplar", "Heavenly"),
+                "Heavenly dragons are protectors of the innocent and enemies of the wicked. Wise and with vast knowledge, they offer their advice to the worthy who come to them in their homes among the mountain peaks.", "The power of the heavenly dragon causes you to deal electricity damage in a line if you choose a breath weapon and is connected to the Divine tradition.",
                 [ModData.Traits.DraconicExemplar, Trait.Divine, Trait.Electricity, ModData.Traits.Line, Trait.Reflex, Trait.Homebrew], null);
             yield return draconicExemplarHeaven;
             Feat draconicExemplarBlizzard = new Feat(ModManager.RegisterFeatName("BlizzardExemplar", "Blizzard"),
@@ -135,15 +138,18 @@ public class DragonBlood
                 [ModData.Traits.Dragonblood, Trait.Primal, ModData.Traits.MagicDragonblood]);
             CreateMagicalDragonbloodLogic(primalDragonBlood);
             yield return primalDragonBlood;
-            TrueFeat scalyHide = new TrueFeat(ModManager.RegisterFeatName("ScalyHide", "Scaly Hide"),
-                1,"You were born with a layer of scales across your entire body that resemble those of your draconic progenitor.", "When you’re unarmored, the scales give you a +1 item bonus to AC with a Dexterity cap of +3. The item bonus to AC increases to +2 at 5th level. The item bonus to AC from these scales is cumulative with armor potency runes on your explorer's clothing, or the mystic armor spell.",
+            TrueFeat scalyHide = new TrueFeat(ModData.FeatNames.ScalyHide,
+                1,"You were born with a layer of scales across your entire body that resemble those of your draconic progenitor.", "When you’re unarmored, the scales give you a +1 item bonus to AC with a Dexterity cap of +3. The item bonus to AC increases to +2 at 5th level. The item bonus to AC from these scales is cumulative with armor potency runes on your explorer's clothing, or the mystic armor spell." +
+                "\n\n{b}Special{/b} You cannot take this feat and Draconic Aspect. You should take this feat at level 1 only.",
                 [ModData.Traits.Dragonblood]);
             CreateScalyHideLogic(scalyHide);
             yield return scalyHide;
             TrueFeat draconicAspect = new TrueFeat(ModData.FeatNames.DraconicAspect,
                 1,"You have an obvious draconic feature, such as sharp claws, a snout full of sharp teeth, or strong reptilian tail, that you can use offensively.", 
-                "You gain your choice of one of the following unarmed attacks. The attack is in the brawling group and has the listed damage die and traits.\n\n    Claw 1d4 slashing (agile, finesse, unarmed)\n    Jaws 1d6 piercing (forceful, unarmed)\n    Tail 1d6 bludgeoning (sweep, trip, unarmed)",
+                "You gain your choice of one of the following unarmed attacks. The attack is in the brawling group and has the listed damage die and traits.\n\n    {b}•Claw{/b} 1d4 slashing (agile, finesse, unarmed)\n    {b}•Jaws{/b} 1d6 piercing (forceful, unarmed)\n    {b}•Tail{/b} 1d6 bludgeoning (sweep, trip, unarmed)" +
+                "\n\n{b}Special{/b} You cannot take this feat and Scaly Hide. You should take this feat at level 1 only.",
                 [ModData.Traits.Dragonblood], AspectFeats(DraconicAspectFeats()));
+            draconicAspect.WithPrerequisite(sheet => !sheet.HasFeat(ModData.FeatNames.ScalyHide), "You cannot take this feat and Scaly Hide.");
             yield return draconicAspect;
             //Level 5 feats
             TrueFeat deadlyAspect = new TrueFeat(ModData.FeatNames.DeadlyAspect,
@@ -158,12 +164,18 @@ public class DragonBlood
                 [ModData.Traits.Dragonblood]);
             CreateTraditionalResistancesLogic(traditionalResists);
             yield return traditionalResists;
-            TrueFeat dragonsFlight = new TrueFeat(ModManager.RegisterFeatName("TraditionalResists", "Traditional Resistances"),
+            TrueFeat dragonsFlight = new TrueFeat(ModManager.RegisterFeatName("DragonsFlight", "Dragon's Flight"),
                 5,"You have grown a small pair of draconic wings or have honed your use of the wings you've had since birth.", 
-                "You gain a +1 status bonus to AC and saves against spells and other magical effects from the same tradition as your lineage. This bonus increases to +2 against sleep and paralysis effects.",
+                "You Fly. If you don't normally have a fly Speed, you gain a fly Speed of 20 feet for this movement. You must end your movement on solid ground.",
                 [ModData.Traits.Dragonblood]);
-            
+            CreateDragonsFlightLogic(dragonsFlight);
             yield return dragonsFlight;
+            TrueFeat draconicScent = new TrueFeat(ModManager.RegisterFeatName("DraconicScent", "Draconic Scent"),
+                5,"Your sense of smell has heightened to be as keen as that of a dragon.", 
+                "Creatures within 30 feet cannot be undetected by you.",
+                [ModData.Traits.Dragonblood]);
+            CreateDraconicScentLogic(draconicScent);
+            yield return draconicScent;
             
     }
     private static void CreateBreathLogic(TrueFeat breathWeapon)
@@ -181,10 +193,10 @@ public class DragonBlood
         {
           Creature owner = qfSelf.Owner;
           int dc = owner.ClassOrSpellDC();
-          return new ActionPossibility(new CombatAction(owner, (Illustration) IllustrationName.BreathWeapon, "Breath weapon", [Trait.Basic, DetermineTrait(feat)], 
+          return new ActionPossibility(new CombatAction(owner, IllustrationName.BreathWeapon, "Breath weapon", [Trait.Basic, DetermineTrait(feat)], 
               $"{{b}}Area{{/b}} {(IsCone(feat) ? "15-foot cone" : "30-foot line")}\n{{b}}Saving throw{{/b}} basic Reflex\n\nDeal {S.HeightenedVariable((owner.Level + 1) / 2, 1)}d4 {DetermineDamageKind(feat).HumanizeTitleCase2().ToLower()} damage (basic DC {dc.ToString()} {WhichSave(feat).HumanizeTitleCase2().ToLower()} save mitigates).\n\nThen you can't use Breath weapon again for 1d4 rounds.", 
-              IsCone(feat) ? (Target) Target.Cone(3) : (Target) Target.Line(6)).WithActionCost(2).WithProjectileCone((Illustration) IllustrationName.BreathWeapon, 15, ProjectileKind.Cone).WithSoundEffect(SfxName.FireRay).WithSavingThrow(new SavingThrow(WhichSave(feat), dc)).WithEffectOnEachTarget((Delegates.EffectOnEachTarget) 
-              (async (spell, caster, target, result) => await CommonSpellEffects.DealBasicDamage(spell, caster, target, result, ((caster.Level + 1) / 2).ToString() + "d4", DetermineDamageKind(feat)))).WithEffectOnChosenTargets((Delegates.EffectOnChosenTargets) (async (spell, caster, targets) => caster.AddQEffect(QEffect.CannotUseForXRound("Breath Weapon", caster, R.Next(2, 5))))))
+              IsCone(feat) ? Target.Cone(3) : Target.Line(6)).WithActionCost(2).WithProjectileCone(IllustrationName.BreathWeapon, 15, ProjectileKind.Cone).WithSoundEffect(SfxName.FireRay).WithSavingThrow(new SavingThrow(WhichSave(feat), dc)).WithEffectOnEachTarget( 
+              (async (spell, caster, target, result) => await CommonSpellEffects.DealBasicDamage(spell, caster, target, result, ((caster.Level + 1) / 2).ToString() + "d4", DetermineDamageKind(feat)))).WithEffectOnChosenTargets((async (_, caster, _) => caster.AddQEffect(QEffect.CannotUseForXRound("Breath Weapon", caster, R.Next(2, 5))))))
               .WithPossibilityGroup("Natural weapon");
         })
       });
@@ -201,8 +213,8 @@ public class DragonBlood
                 "You must select a draconic exemplar other than adamantine.")
             .WithOnCreature((sheet, self) =>
             {
-                Feat? feat = sheet.AllFeats.FirstOrDefault<Feat>((Func<Feat, bool>)(ft =>
-                    ft.HasTrait(ModData.Traits.DraconicExemplar) && ft.FeatName != ModData.FeatNames.Unknown));
+                Feat? feat = sheet.AllFeats.FirstOrDefault(ft =>
+                    ft.HasTrait(ModData.Traits.DraconicExemplar) && ft.FeatName != ModData.FeatNames.Unknown);
                 if (feat != null && !feat.HasTrait(ModData.Traits.Bludgeoning))
                 {
                     self.AddQEffect(new QEffect()
@@ -266,16 +278,17 @@ public class DragonBlood
     }
     private static void CreateScalyHideLogic(TrueFeat scalyHide)
     {
-        scalyHide.WithPermanentQEffect(selfQf =>
+        scalyHide.WithPrerequisite(sheet => !sheet.HasFeat(ModData.FeatNames.DraconicAspect), "You cannot take this feat and Draconic Aspect.")
+            .WithPermanentQEffect(null,selfQf =>
         {
             Item createdArmor = new Item(new ModdedIllustration("HTDAssets/Scale.png"), "Scaly Hide",
                     [Trait.Armor, Trait.UnarmoredDefense, Trait.Cloth])
-                .WithArmorProperties(new ArmorProperties(selfQf.Owner.Level < 5 ? 1 : 2, 3, 0, 0, 10 /*0x10*/));
+                .WithArmorProperties(new ArmorProperties(selfQf.Owner.Level < 5 ? 1 : 2, 3, 0, 0, 10));
             ReplicateArmorRunes(selfQf.Owner, createdArmor);
             if (selfQf.Owner.Armor.WearsArmor != true)
             {
                 selfQf.Owner.AddQEffect(new QEffect("Scaly Hide",
-                    "While you are unarmored, the scales give you a +1 item bonus to AC with a Dexterity cap of +3. The item bonus to AC increases to +2 at 5th level. The item bonus to AC from these scales is cumulative with armor potency runes on your explorer's clothing, or the mystic armor spell.",
+                    "While you are unarmored, the scales give you an item bonus to ac.",
                     ExpirationCondition.Never, selfQf.Owner, new ModdedIllustration("HTDAssets/Scale.png"))
                 {
                     Id = ModData.QEffectIds.ScalyHide,
@@ -301,7 +314,7 @@ public class DragonBlood
                         Item rune1 = Items.GetItemTemplate(ItemName.ArmorPotencyRunestone);
                         rune1.RuneProperties?.ModifyItem(createdArmor);
                     }
-                } ;
+                }
             };
         });
     }
@@ -319,6 +332,7 @@ public class DragonBlood
                         Feat? feat = sheet.AllFeats.FirstOrDefault(ft => ft.HasTrait(ModData.Traits.MagicDragonblood));
                         if (defense is Defense.AC or Defense.Fortitude or Defense.Will or Defense.Reflex 
                             && action != null 
+                            && feat != null
                             && action.HasTrait(DetermineTrait(feat))
                             && action.CountsAsMagical)
                         {
@@ -332,25 +346,108 @@ public class DragonBlood
                     });
             });
     }
-
     private static void CreateDragonsFlightLogic(TrueFeat dragonsFlight)
     {
         dragonsFlight.WithActionCost(1)
             .WithOnCreature(self =>
                 {
                     self.AddQEffect(new QEffect("Dragon's Flight",
-                        "You can fly 20 feet, you must end this movement on solid ground.")
+                        "You can fly up to 20 feet, you must end this movement on solid ground.")
                         {
                             ProvideMainAction = qf =>
                             {
-                                CombatAction dragonFly = new CombatAction(self, (Illustration) IllustrationName.Fly, "Dragon's Flight", [Trait.Move],"You can fly 20 feet, you must end this movement on solid ground.", Target.Self()
-                                ).WithActionCost(1)
-                                .WithEffectOnSelf()
+                                ActionPossibility dragonFly = new ActionPossibility(new CombatAction(self,
+                                        IllustrationName.Fly, "Dragon's Flight", [Trait.Move],
+                                        "You can fly up to 20 feet, you must end this movement on solid ground.",
+                                        Target.Self()
+                                    ).WithActionCost(1)
+                                    .WithEffectOnChosenTargets(async (action, innerSelf, _) =>
+                                        {
+                                            QEffect littleFly = QEffect.Flying()
+                                                .WithExpirationNever();
+                                            littleFly.BonusToAllSpeeds = qfThis =>
+                                                new Bonus(4, BonusType.Untyped, "Dragon's Flight");
+                                            innerSelf.AddQEffect(littleFly);
+
+                                            // Get a floodfill for movement using striding, after making the user flying
+                                            List<Option> tileOptions =
+                                            [
+                                                new CancelOption(true)
+                                            ];
+                                            CombatAction? moveAction = Possibilities.Create(self)
+                                                .Filter(ap =>
+                                                {
+                                                    if (ap.CombatAction.ActionId != ActionId.Stride)
+                                                        return false;
+                                                    ap.CombatAction.ActionCost = 0;
+                                                    ap.RecalculateUsability();
+                                                    return true;
+                                                }).CreateActions(true).FirstOrDefault(pw =>
+                                                    pw.Action.ActionId == ActionId.Stride) as CombatAction;
+                                            IList<Tile> floodFill = Pathfinding.Floodfill(innerSelf, innerSelf.Battle,
+                                                    new PathfindingDescription()
+                                                    {
+                                                        Squares = 4,
+                                                        Style = { MaximumSquares = 4 }
+                                                    })
+                                                .Where(tile =>
+                                                    tile.LooksFreeTo(innerSelf) 
+                                                    && tile.Kind != TileKind.Chasm
+                                                    && tile.Kind != TileKind.Water
+                                                    && tile.Kind != TileKind.Lava)
+                                                .ToList();
+                                            floodFill.ForEach(tile =>
+                                            {
+                                                if (moveAction == null ||
+                                                    !(bool)moveAction.Target.CanBeginToUse(innerSelf)) return;
+                                                tileOptions.Add(moveAction.CreateUseOptionOn(tile)
+                                                    .WithIllustration(moveAction.Illustration));
+                                            });
+
+                                            // Pick a tile to fly to
+                                            Option chosenTile = (await innerSelf.Battle.SendRequest(
+                                                new AdvancedRequest(innerSelf,
+                                                    "Choose where to Fly to or right-click to cancel. You must end your movement on solid ground.",
+                                                    tileOptions)
+                                                {
+                                                    IsMainTurn = false,
+                                                    IsStandardMovementRequest = true,
+                                                    TopBarIcon = IllustrationName.Fly,
+                                                    TopBarText =
+                                                        "Choose where to Fly to or right-click to cancel. You must end your movement on solid ground.",
+                                                })).ChosenOption;
+                                            switch (chosenTile)
+                                            {
+                                                case CancelOption:
+                                                    action.RevertRequested = true;
+                                                    break;
+                                                case TileOption tOpt:
+                                                    // Perform fly
+                                                    await tOpt.Action();
+                                                    innerSelf.RemoveAllQEffects(qf => qf == littleFly);
+                                                    break;
+                                            }
+                                        }
+                                    ));
+                                return dragonFly;
                             }
                         }
                     );
                 }
             );
+    }
+
+    private static void CreateDraconicScentLogic(TrueFeat draconicScent)
+    {
+        draconicScent.WithPermanentQEffect(qf =>
+            {
+                qf.StateCheck = qfThis =>
+                {
+                    qfThis.Owner.Battle.AllCreatures.Where(cr => cr.DistanceTo(qfThis.Owner) <= 6)
+                        .ForEach(cr => cr.DetectionStatus.Undetected = false);
+                };
+            }
+        );
     }
     private static IEnumerable<Feat> DraconicAspectFeats()
     {
