@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using Dawnsbury.Audio;
 using Dawnsbury.Auxiliary;
 using Dawnsbury.Core;
@@ -5,6 +7,7 @@ using Dawnsbury.Core.Animations;
 using Dawnsbury.Core.CharacterBuilder;
 using Dawnsbury.Core.CharacterBuilder.Feats;
 using Dawnsbury.Core.CharacterBuilder.FeatsDb.Common;
+using Dawnsbury.Core.CharacterBuilder.FeatsDb.Spellbook;
 using Dawnsbury.Core.CharacterBuilder.Selections.Options;
 using Dawnsbury.Core.CharacterBuilder.Spellcasting;
 using Dawnsbury.Core.CombatActions;
@@ -19,6 +22,7 @@ using Dawnsbury.Core.Mechanics.Enumerations;
 using Dawnsbury.Core.Mechanics.Targeting;
 using Dawnsbury.Core.Mechanics.Treasure;
 using Dawnsbury.Core.Possibilities;
+using Dawnsbury.Core.Roller;
 using Dawnsbury.Core.Tiles;
 using Dawnsbury.Display;
 using Dawnsbury.Display.Illustrations;
@@ -27,7 +31,7 @@ using Dawnsbury.Modding;
 
 namespace HereThereBeDragons;
 
-public class DragonBlood
+public abstract class DragonBlood
 {
     public static IEnumerable<Feat> CreateDragonbloodFeats()
     {
@@ -205,27 +209,83 @@ public class DragonBlood
                 [ModData.Traits.Dragonblood]);
             CreateDraconicScentLogic(draconicScent);
             yield return draconicScent;
-            
+            Feat formidableBreath = new TrueFeat(ModData.FeatNames.FormidableBreath, 9, "Thanks to rigorous breathing exercises and a diet similar to that of your lineage, your magical breath is more powerful.", 
+                "The area of your Breath of the Dragon increases to 30 feet for a cone or 60 feet for a line, and the damage dice are d6s instead of d4s.", 
+                [ModData.Traits.Dragonblood]).WithPrerequisite(breathOfTheDragon.FeatName, "Breath of the Dragon");
+            yield return formidableBreath;
+            Feat trueDragonsFlight = new TrueFeat(ModManager.RegisterFeatName("TrueDragonsFlight", "True Dragon's Flight"), 9, "Your wings have grown more powerful, capable of keeping you aloft longer.", "You have a fly Speed of 20 feet at all times (to fly, toggle on true dragon's flight, to regain your full speed, toggle it off).",
+                [ModData.Traits.Dragonblood]).WithPrerequisite(dragonsFlight.FeatName, "Dragon's Flight");
+            CreateTrueFlightLogic(trueDragonsFlight);
+            yield return trueDragonsFlight;
+            Feat wingBuffet = new TrueFeat(ModManager.RegisterFeatName("WingBuffet", "Wing Buffet"), 9, "You have a pair of draconic wings strong enough to batter your foes away and shove them away.", 
+                "Choose up to two creatures adjacent to you. Attempt an Athletics check and compare it to the Fortitude DC of each target. This counts as two attacks for your multiple attack penalty, but the penalty doesn't increase until after both attacks."
+                +S.FourDegreesOfSuccess("The target takes bludgeoning damage equal to double your level and is pushed up to 10 feet away from you.", "The target takes bludgeoning damage equal to your level and is pushed up to 5 feet away from you.", "The target takes bludgeoning damage equal to half your level.", "You fall prone at the end of this activity."), 
+                [ModData.Traits.Dragonblood, Trait.Attack]).WithActionCost(2)
+                .WithPrerequisite(values => values.GetProficiency(Trait.Athletics) >= Proficiency.Expert, "You must be an expert in Athletics.");
+            CreateWingBuffetLogic(wingBuffet);
+            yield return wingBuffet;
     }
     private static void CreateBreathLogic(TrueFeat breathWeapon)
     {
         breathWeapon.WithActionCost(2)
-            .WithPrerequisite((sheet) => (!sheet.HasFeat(ModData.FeatNames.Unknown) && sheet.AllFeats.Exists(feat => (feat.HasTrait(ModData.Traits.DraconicExemplar)))), "You must select a draconic exemplar.")
+            .WithPrerequisite((sheet) => !sheet.HasFeat(ModData.FeatNames.Unknown) && sheet.AllFeats.Exists(feat => feat.HasTrait(ModData.Traits.DraconicExemplar)), "You must select a draconic exemplar.")
             .WithOnCreature((sheet, creature) =>
     {
       Feat? feat = sheet.AllFeats.FirstOrDefault(ft => ft.HasTrait(ModData.Traits.DraconicExemplar) && ft.FeatName != ModData.FeatNames.Unknown);
       if (feat == null)
         return;
-      creature.AddQEffect(new QEffect("Breath of the Dragon", "You have a breath weapon.")
+      int num = 10;
+      if (creature.PersistentCharacterSheet?.Class != null)
+      {
+          List<int> nums = [];
+          Trait classTrait = creature.PersistentCharacterSheet.Class.ClassTrait;
+          int num2 = 10 + creature.Abilities.Get(creature.Abilities.KeyAbility) + sheet.Proficiencies.Get(classTrait).ToNumber(creature.ProficiencyLevel);
+          nums.Add(num2);
+         if (creature.Spellcasting?.Sources != null)
+          {
+              foreach (SpellcastingSource source in creature.Spellcasting.Sources)
+              {
+                  nums.Add(10 + source.SpellcastingAbilityModifier + sheet.Proficiencies.Get(source.SpellcastingTradition).ToNumber(creature.ProficiencyLevel));
+              } 
+          }
+          num = nums.Max();
+      }
+      creature.AddQEffect(new QEffect("Breath of the Dragon {icon:TwoActions}", $"DC {num} basic {WhichSave(feat).HumanizeTitleCase2()} save to deal {(creature.Level + 1) / 2}{(creature.HasFeat(ModData.FeatNames.FormidableBreath) ? "d6" : "d4")} {DetermineDamageKind(feat).HumanizeTitleCase2().ToLower()} damage in a {(!creature.HasFeat(ModData.FeatNames.FormidableBreath) ? IsCone(feat) ? "15-foot cone" : "30-foot line" : IsCone(feat) ? "30-foot cone" : "60-foot line")}.")
       {
         ProvideMainAction = (Func<QEffect, Possibility>) (qfSelf =>
         {
           Creature owner = qfSelf.Owner;
           int dc = owner.ClassOrSpellDC();
-          return new ActionPossibility(new CombatAction(owner, IllustrationName.BreathWeapon, "Breath weapon", [Trait.Basic, DetermineTrait(feat)], 
-              $"{{b}}Area{{/b}} {(IsCone(feat) ? "15-foot cone" : "30-foot line")}\n{{b}}Saving throw{{/b}} basic Reflex\n\nDeal {S.HeightenedVariable((owner.Level + 1) / 2, 1)}d4 {DetermineDamageKind(feat).HumanizeTitleCase2().ToLower()} damage (basic DC {dc.ToString()} {WhichSave(feat).HumanizeTitleCase2().ToLower()} save mitigates).\n\nThen you can't use Breath weapon again for 1d4 rounds.", 
-              IsCone(feat) ? Target.Cone(3) : Target.Line(6)).WithActionCost(2).WithProjectileCone(IllustrationName.BreathWeapon, 15, ProjectileKind.Cone).WithSoundEffect(SfxName.FireRay).WithSavingThrow(new SavingThrow(WhichSave(feat), dc)).WithEffectOnEachTarget( 
-              (async (spell, caster, target, result) => await CommonSpellEffects.DealBasicDamage(spell, caster, target, result, ((caster.Level + 1) / 2).ToString() + "d4", DetermineDamageKind(feat)))).WithEffectOnChosenTargets((async (_, caster, _) => caster.AddQEffect(QEffect.CannotUseForXRound("Breath Weapon", caster, R.Next(2, 5))))))
+          if (!owner.HasFeat(ModData.FeatNames.FormidableBreath))
+          {
+              return new ActionPossibility(new CombatAction(owner, IllustrationName.BreathWeapon, "Breath of the Dragon",
+                          [DetermineTrait(feat), Trait.Magical, Trait.Basic],
+                          $"{{b}}Area{{/b}} {(IsCone(feat) ? "15-foot cone" : "30-foot line")}\n{{b}}Saving throw{{/b}} basic {WhichSave(feat).HumanizeTitleCase2()}\n\nDeal {S.HeightenedVariable((owner.Level + 1) / 2, 1)}d4 {DetermineDamageKind(feat).HumanizeTitleCase2().ToLower()} damage (basic DC {dc.ToString()} {WhichSave(feat).HumanizeTitleCase2().ToLower()} save mitigates).\n\nThen you can't use Breath of the Dragon again for 1d4 rounds.",
+                          IsCone(feat) ? Target.Cone(3) : Target.Line(6)).WithActionCost(2)
+                      .WithProjectileCone(IllustrationName.BreathWeapon, 15, IsCone(feat) ? ProjectileKind.Cone : ProjectileKind.Ray)
+                      .WithSoundEffect(SfxName.FireRay).WithSavingThrow(new SavingThrow(WhichSave(feat), dc))
+                      .WithEffectOnEachTarget(
+                          async (spell, caster, target, result) => await CommonSpellEffects.DealBasicDamage(spell,
+                              caster,
+                              target, result, ((caster.Level + 1) / 2).ToString() + "d4", DetermineDamageKind(feat)))
+                      .WithEffectOnChosenTargets((_, caster, _) =>
+                          Task.FromResult(
+                              caster.AddQEffect(QEffect.CannotUseForXRound("Breath Weapon", caster, R.Next(2, 5))))))
+                  .WithPossibilityGroup("Natural weapon");
+          }
+          return new ActionPossibility(new CombatAction(owner, IllustrationName.BreathWeapon, "Breath of the Dragon",
+                      [DetermineTrait(feat), Trait.Magical, Trait.Basic],
+                      $"{{b}}Area{{/b}} {(IsCone(feat) ? "30-foot cone" : "60-foot line")}\n{{b}}Saving throw{{/b}} basic {WhichSave(feat).HumanizeTitleCase2()}\n\nDeal {S.HeightenedVariable((owner.Level + 1) / 2, 1)}d6 {DetermineDamageKind(feat).HumanizeTitleCase2().ToLower()} damage (basic DC {dc.ToString()} {WhichSave(feat).HumanizeTitleCase2().ToLower()} save mitigates).\n\nThen you can't use Breath of the Dragon again for 1d4 rounds.",
+                      IsCone(feat) ? Target.Cone(6) : Target.Line(12)).WithActionCost(2)
+                  .WithProjectileCone(IllustrationName.BreathWeapon, 15, IsCone(feat) ? ProjectileKind.Cone : ProjectileKind.Ray)
+                  .WithSoundEffect(SfxName.FireRay).WithSavingThrow(new SavingThrow(WhichSave(feat), dc))
+                  .WithEffectOnEachTarget(
+                      async (spell, caster, target, result) => await CommonSpellEffects.DealBasicDamage(spell,
+                          caster,
+                          target, result, ((caster.Level + 1) / 2).ToString() + "d6", DetermineDamageKind(feat)))
+                  .WithEffectOnChosenTargets((_, caster, _) =>
+                      Task.FromResult(
+                          caster.AddQEffect(QEffect.CannotUseForXRound("Breath Weapon", caster, R.Next(2, 5))))))
               .WithPossibilityGroup("Natural weapon");
         })
       });
@@ -236,9 +296,9 @@ public class DragonBlood
     {
         draconicResistance
             .WithPrerequisite(
-                (sheet) => (!sheet.HasFeat(ModData.FeatNames.Unknown)
-                            && !sheet.AllFeats.Exists(feat => (feat.HasTrait(ModData.Traits.Bludgeoning)))
-                            && sheet.AllFeats.Exists(feat => (feat.HasTrait(ModData.Traits.DraconicExemplar)))),
+                (sheet) => !sheet.HasFeat(ModData.FeatNames.Unknown)
+                           && !sheet.AllFeats.Exists(feat => feat.HasTrait(ModData.Traits.Bludgeoning))
+                           && sheet.AllFeats.Exists(feat => feat.HasTrait(ModData.Traits.DraconicExemplar)),
                 "You must select a draconic exemplar other than adamantine.")
             .WithOnCreature((sheet, self) =>
             {
@@ -264,11 +324,11 @@ public class DragonBlood
     {
         draconicResistance
             .WithPrerequisite(
-                (sheet) => (!sheet.HasFeat(ModData.FeatNames.Unknown) 
-                            && sheet.AllFeats.Exists(feat => (feat.HasTrait(ModData.Traits.Bludgeoning))) 
-                            && sheet.AllFeats.Exists(feat => (feat.HasTrait(ModData.Traits.DraconicExemplar)))),
+                (sheet) => !sheet.HasFeat(ModData.FeatNames.Unknown) 
+                           && sheet.AllFeats.Exists(feat => feat.HasTrait(ModData.Traits.Bludgeoning)) 
+                           && sheet.AllFeats.Exists(feat => feat.HasTrait(ModData.Traits.DraconicExemplar)),
                 "You must select the adamantine draconic exemplar.")
-            .WithOnSheet(sheet => {AlternateResistSelection(sheet);});
+            .WithOnSheet(AlternateResistSelection);
     }
     private static void CreateDraconicResistB(Feat resists)
     {
@@ -290,10 +350,10 @@ public class DragonBlood
     private static void CreateMagicalDragonbloodLogic(TrueFeat magicBlood)
     {
         magicBlood.WithPrerequisite(
-                (sheet) => (!sheet.HasFeat(ModData.FeatNames.Unknown) 
-                            && sheet.AllFeats.Exists(feat => (feat.HasTrait(ModData.Traits.DraconicExemplar))
-                            && sheet.AllFeats.FirstOrDefault(feat => (feat.HasTrait(ModData.Traits.DraconicExemplar))).HasTrait(DetermineTraitMagic(magicBlood))
-                            )),
+                (sheet) => !sheet.HasFeat(ModData.FeatNames.Unknown) 
+                           && sheet.AllFeats.Exists(feat => feat.HasTrait(ModData.Traits.DraconicExemplar)
+                                                            && sheet.AllFeats.FirstOrDefault(feat1 => feat1.HasTrait(ModData.Traits.DraconicExemplar))!.HasTrait(DetermineTraitMagic(magicBlood))
+                           ),
                 "You must select a draconic exemplar from the same magical tradition.")
             .WithOnSheet(sheet =>
             {
@@ -331,7 +391,7 @@ public class DragonBlood
                 QEffect? qEffect = selfQf.Owner.FindQEffect(ModData.QEffectIds.ScalyHide);
                 if (qEffect != null) qEffect.ExpiresAt = ExpirationCondition.Immediately;
             }
-            selfQf.StateCheckWithVisibleChanges = async qf =>
+            selfQf.StateCheckWithVisibleChanges = _ =>
             {
                 if (selfQf.Owner.FindQEffect(QEffectId.MageArmor) != null &&
                     selfQf.Owner.HasEffect(ModData.QEffectIds.ScalyHide))
@@ -344,6 +404,7 @@ public class DragonBlood
                         rune1.RuneProperties?.ModifyItem(createdArmor);
                     }
                 }
+                return Task.CompletedTask;
             };
         });
     }
@@ -381,13 +442,13 @@ public class DragonBlood
         dragonsFlight.WithActionCost(1)
             .WithOnCreature(self =>
                 {
-                    self.AddQEffect(new QEffect("Dragon's Flight",
+                    self.AddQEffect(new QEffect("Dragon's Flight {icon:Action}",
                         "You can fly up to 20 feet, you must end this movement on solid ground.")
                         {
-                            ProvideMainAction = qf =>
+                            ProvideMainAction = _ =>
                             {
                                 ActionPossibility dragonFly = new ActionPossibility(new CombatAction(self,
-                                        IllustrationName.Fly, "Dragon's Flight", [Trait.Move],
+                                        IllustrationName.Fly, "Dragon's Flight", [Trait.Move, Trait.Basic],
                                         "You can fly up to 20 feet, you must end this movement on solid ground.",
                                         Target.Self()
                                     ).WithActionCost(1)
@@ -395,10 +456,9 @@ public class DragonBlood
                                         {
                                             QEffect littleFly = QEffect.Flying()
                                                 .WithExpirationNever();
-                                            littleFly.BonusToAllSpeeds = qfThis =>
+                                            littleFly.BonusToAllSpeeds = _ =>
                                                 new Bonus(4, BonusType.Untyped, "Dragon's Flight");
                                             innerSelf.AddQEffect(littleFly);
-
                                             // Get a floodfill for movement using striding, after making the user flying
                                             List<Option> tileOptions =
                                             [
@@ -433,7 +493,6 @@ public class DragonBlood
                                                 tileOptions.Add(moveAction.CreateUseOptionOn(tile)
                                                     .WithIllustration(moveAction.Illustration));
                                             });
-
                                             // Pick a tile to fly to
                                             Option chosenTile = (await innerSelf.Battle.SendRequest(
                                                 new AdvancedRequest(innerSelf,
@@ -450,6 +509,7 @@ public class DragonBlood
                                             {
                                                 case CancelOption:
                                                     action.RevertRequested = true;
+                                                    innerSelf.RemoveAllQEffects(qf => qf == littleFly);
                                                     break;
                                                 case TileOption tOpt:
                                                     // Perform fly
@@ -478,6 +538,121 @@ public class DragonBlood
                 };
             }
         );
+    }
+
+    private static void CreateTrueFlightLogic(Feat trueFlight)
+    {
+        trueFlight.WithPermanentQEffect("You have a fly speed of 20 feet you can enable at any time.", qf =>
+        {
+            Creature self = qf.Owner;
+            QEffect flight = new QEffect()
+            {
+                StateCheckWithVisibleChanges = _ =>
+                {
+                    var speed = SetSpeed(self.Speed);
+                    self.AddQEffect(QEffect.Flying().WithExpirationEphemeral());
+                    self.AddQEffect(new QEffect(ExpirationCondition.Ephemeral){BonusToAllSpeeds = _ => new Bonus(4 - speed, BonusType.Untyped, "True Dragon's Flight")});
+                    return Task.CompletedTask;
+                },
+                Illustration = IllustrationName.Fly,
+                Description = "You have a fly speed of 20 feet.",
+                Id = ModData.QEffectIds.Flight,
+                Name = "Flying",
+            };
+            qf.StartOfCombat = _ => Task.FromResult(self.AddQEffect(flight));
+            qf.ProvideContextualAction = _ =>
+            {
+                if (self.HasEffect(ModData.QEffectIds.Flight))
+                    return new ActionPossibility(new CombatAction(self, IllustrationName.Fly, "Land", [Trait.Basic, Trait.DoesNotBreakStealth], "You cease flying and return to land, regaining your land speed.", Target.Self().WithAdditionalRestriction(cr => cr.Occupies.IsSolidGround ? null : "You must land on solid ground."))
+                        .WithActionCost(0).WithEffectOnSelf(cr => cr.RemoveAllQEffects(effect => effect.Id == ModData.QEffectIds.Flight)));
+                return new ActionPossibility(new CombatAction(self, IllustrationName.Fly, "Begin Flight",
+                    [Trait.Basic, Trait.DoesNotBreakStealth],
+                    "You take flight, you begin flying and your speed becomes 20 foot.", Target.Self())
+                    .WithActionCost(0).WithEffectOnSelf(cr => cr.AddQEffect(flight)));
+            };
+
+        });
+    }
+
+    private static void CreateWingBuffetLogic(Feat wingBuffet)
+    {
+        wingBuffet.WithPermanentQEffect(null, qf =>
+        {
+            Creature self = qf.Owner;
+            qf.ProvideActionIntoPossibilitySection = (_, section) =>
+            {
+                if (section.PossibilitySectionId == PossibilitySectionId.AttackManeuvers)
+                {
+                    CombatAction wing = new CombatAction(self, IllustrationName.FiendishWings, "Wing Buffet",
+                        [Trait.Attack, Trait.Basic, Trait.AttackDoesNotTargetAC, Trait.AttackDoesNotIncreaseMultipleAttackPenalty],
+                        "Choose up to two creatures adjacent to you. Attempt an Athletics check and compare it to the Fortitude DC of each target. This counts as two attacks for your multiple attack penalty, but the penalty doesn't increase until after both attacks."
+                        +S.FourDegreesOfSuccess("The target takes bludgeoning damage equal to double your level and is pushed up to 10 feet away from you.", "The target takes bludgeoning damage equal to your level and is pushed up to 5 feet away from you.", "The target takes bludgeoning damage equal to half your level.", "You fall prone at the end of this activity."),
+                        Target.MultipleCreatureTargets(Target.AdjacentCreature(), Target.AdjacentCreature()).WithMinimumTargets(1).WithMustBeDistinct());
+                    wing.WithActionCost(2).WithActionId(ModData.ActionIds.WingBuffet);
+                    wing.WithEffectOnChosenTargets( async (action, _, targets) =>
+                    {
+                        int roll = R.NextD20();
+                        foreach (Creature target in targets.ChosenCreatures)
+                        {
+                            CheckBreakdown breakdown = CombatActionExecution.BreakdownAttack(
+                                new CombatAction(self, null!, "Wings", [Trait.Basic, Trait.Attack, Trait.AttackDoesNotIncreaseMultipleAttackPenalty], "", Target.Self())
+                                    .WithActionId(ModData.ActionIds.WingBuffet)
+                                    .WithActiveRollSpecification(new ActiveRollSpecification(
+                                        TaggedChecks.SkillCheck(Skill.Athletics),
+                                        TaggedChecks.DefenseDC(Defense.Fortitude))), target);
+                            CheckBreakdownResult breakdownResult = new(breakdown, roll);
+                            string str1 = breakdown.DescribeWithFinalRollTotal(breakdownResult);
+                            string str2 = "";
+                            switch (breakdownResult.CheckResult)
+                            {
+                                case CheckResult.CriticalSuccess:
+                                    await CommonSpellEffects.DealDirectDamage(action, DiceFormula.FromText((self.Level*2).ToString()), target, CheckResult.CriticalSuccess, DamageKind.Bludgeoning);
+                                    await self.PushCreature(target, 2);
+                                    str2 = "{b}{Green}Critical Success{/}{/b} vs "+target.Name;
+                                    break;
+                                case CheckResult.Success:
+                                    await CommonSpellEffects.DealDirectDamage(action, DiceFormula.FromText(self.Level.ToString()), target, CheckResult.Success, DamageKind.Bludgeoning);
+                                    await self.PushCreature(target, 1);
+                                    str2 = "{Green}Success{/} vs "+target.Name;
+                                    break;
+                                case CheckResult.Failure:
+                                    await CommonSpellEffects.DealDirectDamage(action, DiceFormula.FromText(self.Level.ToString()), target, CheckResult.Success, DamageKind.Bludgeoning);
+                                    str2 = "{Red}Failure{/} vs "+target.Name;
+                                    break;
+                                case CheckResult.CriticalFailure:
+                                    self.AddQEffect(new QEffect(ExpirationCondition.EphemeralAtEndOfImmediateAction){WhenExpires = _ => self.AddQEffect(QEffect.Prone())});
+                                    str2 = "{b}{Red}Critical Failure{/}{/b} vs "+target.Name;
+                                    break;
+                            }
+                            var lime = Microsoft.Xna.Framework.Color.Lime;
+                            var red = Microsoft.Xna.Framework.Color.Red;
+                            DefaultInterpolatedStringHandler interpolatedStringHandler = new(10, 3);
+                            interpolatedStringHandler.AppendLiteral(" (");
+                            ref DefaultInterpolatedStringHandler local =
+                                ref interpolatedStringHandler;
+                            var d20Roll = breakdownResult.D20Roll;
+                            string str4 = d20Roll + breakdown.TotalCheckBonus.WithPlus();
+                            local.AppendFormatted(str4);
+                            interpolatedStringHandler.AppendLiteral("=");
+                            interpolatedStringHandler.AppendFormatted(breakdownResult.D20Roll +
+                                                                      breakdown.TotalCheckBonus);
+                            interpolatedStringHandler.AppendLiteral(" vs. ");
+                            interpolatedStringHandler.AppendFormatted(breakdown.TotalDC);
+                            interpolatedStringHandler.AppendLiteral(").");
+                            string stringAndClear = interpolatedStringHandler.ToStringAndClear();
+                            string log = $"{str2}{stringAndClear}";
+                            string logDetails = str1;
+                            target.Overhead(breakdownResult.CheckResult.HumanizeTitleCase2(), breakdownResult.CheckResult >= CheckResult.Success ? lime : red, log, "Wing Buffet", logDetails);
+                        }
+                        ++self.Actions.AttackedThisManyTimesThisTurn;
+                        ++self.Actions.AttackedThisManyTimesThisTurn;
+                    });
+                    return new ActionPossibility(wing);
+                }
+                return null;
+            };
+
+        });
     }
 
     private static IEnumerable<Feat> DraconicAspectFeats()
@@ -612,7 +787,7 @@ public class DragonBlood
         {
             foreach (Item rune in baseArmor.Runes)
             {
-                if (rune.RuneProperties != null && (rune.RuneProperties.CanBeAppliedTo == null || rune.RuneProperties.CanBeAppliedTo(rune, createdArmor) == null))
+                if (rune.RuneProperties != null && rune.RuneProperties.CanBeAppliedTo?.Invoke(rune, createdArmor) == null)
                     rune.RuneProperties.ModifyItem(createdArmor);
             }
         }
@@ -629,5 +804,12 @@ public class DragonBlood
         if (feat.HasTrait(Trait.Divine))
             return SpellId.Guidance;
         return feat.HasTrait(Trait.Occult) ? SpellId.OpenDoor : SpellId.Tanglefoot;
+    }
+    private static int SetSpeed(int speed)
+    {
+        var ints = new List<int>();
+        if (ints == null) throw new ArgumentNullException(nameof(ints));
+        ints.Add(speed);
+        return ints.FirstOrDefault();
     }
 }

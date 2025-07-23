@@ -1,6 +1,7 @@
 using Dawnsbury.Core;
 using Dawnsbury.Core.CharacterBuilder.Feats;
 using Dawnsbury.Core.CharacterBuilder.Spellcasting;
+using Dawnsbury.Core.CombatActions;
 using Dawnsbury.Core.Mechanics;
 using Dawnsbury.Core.Mechanics.Enumerations;
 using Dawnsbury.Display.Illustrations;
@@ -12,8 +13,7 @@ public class ModData
 {
     public static class Traits
     {
-        public static readonly Trait Dragonblood = ModManager.RegisterTrait("Dragonblood", new TraitProperties("Dragonblood", true)
-            {IsAncestryTrait = true});
+        public static readonly Trait Dragonblood = ModManager.RegisterTrait("Dragonblood", new TraitProperties("Dragonblood", true) {IsAncestryTrait = true});
         public static readonly Trait DraconicExemplar = ModManager.RegisterTrait("DragonChoice", new TraitProperties("Draconic Exemplar", false));
         public static readonly Trait Bludgeoning = ModManager.RegisterTrait("BludgeoningTraitForFeat", new TraitProperties("Bludgeoning", true));
         public static readonly Trait Unknown = ModManager.RegisterTrait("Unknown", new TraitProperties("Unknown", false));
@@ -30,14 +30,16 @@ public class ModData
         public static readonly FeatName DeadlyAspect = ModManager.RegisterFeatName("DeadlyAspect", "Deadly Aspect");
         public static readonly FeatName DraconicAspect = ModManager.RegisterFeatName("DraconicAspect", "Draconic Aspect");
         public static readonly FeatName ScalyHide = ModManager.RegisterFeatName("ScalyHide", "Scaly Hide");
-        public static readonly FeatName DragonDomain = ModManager.RegisterFeatName("DragonDomain", "Dragon");
-        public static readonly FeatName ProtectionDomain = ModManager.RegisterFeatName("ProtectionDomain", "Protection");
+        public static readonly FeatName DragonDomain = ModManager.RegisterFeatName("Dragon{b}{/b}", "Dragon");
+        public static readonly FeatName ProtectionDomain = ModManager.RegisterFeatName("Protection", "Protection");
+        public static readonly FeatName FormidableBreath =  ModManager.RegisterFeatName("FormidableBreath", "Formidable Breath");
     }
 
     internal static class QEffectIds
     {
         internal static QEffectId ScalyHide { get; } = ModManager.RegisterEnumMember<QEffectId>("ScalyHide");
         internal static QEffectId DraconicBarrage { get; } = ModManager.RegisterEnumMember<QEffectId>("DraconicBarrage");
+        internal static QEffectId Flight { get; } = ModManager.RegisterEnumMember<QEffectId>("Flight");
     }
 
     internal static class Illustrations
@@ -48,8 +50,9 @@ public class ModData
         internal static Illustration ElectricityBarrageIllustration { get; } = new ModdedIllustration("HTDAssets/DraconicBarrageElectricity.png");
         internal static Illustration DragonTail { get; } = new ModdedIllustration("HTDAssets/Tail.png");
     }
-    internal static class IllustrationNames 
+
+    internal static class ActionIds
     {
-        internal static IllustrationName DragonTail { get; } = ModManager.RegisterEnumMember<IllustrationName>("DragonTail");
+        internal static ActionId WingBuffet = ModManager.RegisterEnumMember<ActionId>("WingBuffet");
     }
 }

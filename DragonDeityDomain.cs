@@ -26,10 +26,10 @@ namespace HereThereBeDragons;
 
 public class DragonDeityDomain
 {
-    public static readonly SpellId DraconicBarrage = ModManager.RegisterNewSpell(
+    internal static readonly SpellId DraconicBarrage = ModManager.RegisterNewSpell(
             "DraconicBarrage",
             1,
-            ((spellId, caster, spellLevel, inCombat, spellInformation) =>
+            (_, _, spellLevel, _, _) =>
             {
                 return Spells.CreateModern(
                         ModData.Illustrations.DraconicBarrageIllustration,
@@ -64,18 +64,10 @@ public class DragonDeityDomain
                             $"Your Strikes with weapons or unarmed attacks deal 1 additional {str5} damage, as the dragons add their energy to your attacks. You can Sustain the spell to change the damage type. In addition, you can Sustain the spell to have the dragons fly off to bombard a creature within 60 feet. That creature takes 2d4 {str5} damage (basic Reflex save). Once the dragons have been used in this way, they wink out of existence and the spell ends.\n\n" +
                             "{b}Heightened (+1){/b} The additional amount of damage from the dragons increases by 1 and the damage dealt by the dragons' bombardment increases by 2d4.";
                     })
-                    .WithEffectOnSelf(async (spell, self) =>
+                    .WithEffectOnSelf((spell, self) =>
                     {
-                        Debug.Assert(spell?.ChosenVariant != null, "spell?.ChosenVariant != null");
+                        Debug.Assert(spell.ChosenVariant != null);
                         string id = spell.ChosenVariant.Id;
-                        string str6 = id switch
-                        {
-                            "FIRE" => "fire",
-                            "FORCE" => "force",
-                            "MENTAL" => "mental",
-                            "ELECTRICITY" => "electricity",
-                            _ => "unknown"
-                        };
                         switch (id)
                         {
                             case "FIRE":
@@ -91,14 +83,15 @@ public class DragonDeityDomain
                                 self.AddQEffect(CreateBarrageLogic(spell, DamageKind.Electricity));
                                 break;
                         }
+                        return Task.CompletedTask;
                     });
-            })
+            }
         );
 
     public static readonly SpellId DragonRoar = ModManager.RegisterNewSpell(
             "RoarOfTheDragon",
             4,
-            (spellId, caster, spellLevel, inCombat, spellInformation) =>
+            (_, _, spellLevel, _, _) =>
             {
                 return Spells.CreateModern(
                         new ModdedIllustration("HTDAssets/Roar.png"),
@@ -116,7 +109,7 @@ public class DragonDeityDomain
                     )
                     .WithActionCost(2)
                     .WithSoundEffect(SfxName.BeastRoar)
-                    .WithEffectOnEachTarget( async (spell, self, target, checkResult) =>
+                    .WithEffectOnEachTarget((_, self, target, checkResult) =>
                     {
                         int num;
                         switch (checkResult)
@@ -131,23 +124,24 @@ public class DragonDeityDomain
                                 num = 1;
                                 break;
                             case CheckResult.CriticalSuccess:
-                                return;
+                                return Task.CompletedTask;
                             default:
                                 num = 0;
                                 break;
                         }
                         target.AddQEffect(QEffect.Frightened(num));
                         if (checkResult != CheckResult.CriticalFailure)
-                            return;
+                            return Task.CompletedTask;
                         target.AddQEffect(QEffect.Fleeing(self).WithExpirationAtStartOfSourcesTurn(self, 1));
-                        });
+                        return Task.CompletedTask;
+                    });
             }
         );
 
     public static readonly SpellId ProtectorsSphere = ModManager.RegisterNewSpell(
         "ProtectorsSphere",
         4,
-        (spellId, caster, spellLevel, inCombat, spellInformation) =>
+        (_, _, spellLevel, _, _) =>
         {
             return Spells.CreateModern(
                     IllustrationName.CircleOfProtection,
@@ -185,13 +179,13 @@ public class DragonDeityDomain
         ClericClassFeatures.AllDomainFeats.Add(dragonDomain);
         yield return dragonDomain;
         Feat clericDomain1 = CreateAdvancedDomainFeat(Trait.Cleric, dragonDomain);
-        AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain).Subfeats.Add(clericDomain1);
+        AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(clericDomain1);
         yield return clericDomain1;
         Feat championDomain1 = CreateAdvancedDomainFeat(Trait.Champion, dragonDomain);
-        AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain).Subfeats.Add(championDomain1);
+        AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(championDomain1);
         yield return championDomain1;
         Feat oracleDomain1 = CreateAdvancedDomainFeat(Trait.Oracle, dragonDomain);
-        AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain).Subfeats.Add(oracleDomain1);
+        AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(oracleDomain1);
         yield return oracleDomain1;
         if (ModManager.TryParse("ProtectorsSacrifice", out SpellId protectorsSacrifice))
         {
@@ -199,13 +193,13 @@ public class DragonDeityDomain
             ClericClassFeatures.AllDomainFeats.Add(protectionDomain);
             yield return protectionDomain;
             Feat clericDomain = CreateAdvancedDomainFeat(Trait.Cleric, protectionDomain);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain).Subfeats.Add(clericDomain);
+            AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(clericDomain);
             yield return clericDomain;
             Feat championDomain = CreateAdvancedDomainFeat(Trait.Champion, protectionDomain);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain).Subfeats.Add(championDomain);
+            AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(championDomain);
             yield return championDomain;
             Feat oracleDomain = CreateAdvancedDomainFeat(Trait.Oracle, protectionDomain);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain).Subfeats.Add(oracleDomain);
+            AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(oracleDomain);
             yield return oracleDomain;
             Feat tianDeity = new DeitySelectionFeat(
                 ModManager.RegisterFeatName("Deity: Tian"),
@@ -214,18 +208,17 @@ public class DragonDeityDomain
                 [NineCornerAlignment.TrueNeutral, NineCornerAlignment.NeutralGood, NineCornerAlignment.LawfulNeutral, NineCornerAlignment.LawfulGood],
                 [FeatName.HealingFont], [FeatName.DomainAir, FeatName.DomainSun, ModData.FeatNames.ProtectionDomain, ModData.FeatNames.DragonDomain], ItemName.Longspear, [SpellId.TrueStrike, SpellId.FalseLife ,SpellId.DeflectCriticalHit, SpellId.Stoneskin], Skill.Religion);
             tianDeity.Traits.Add(Trait.Homebrew);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric).Subfeats.Add(tianDeity);
+            AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric)?.Subfeats?.Add(tianDeity);
             yield return tianDeity;
-            Feat apsuDeity = new DeitySelectionFeat(
-                ModManager.RegisterFeatName("Deity: Apsu"),
-                "Texts more ancient than recorded time kept in the halls of draconic sages assert that Apsu and his mate Sarshallatu were the first dragons. The two spawned seven children and as a family, they shaped the mortal world of Golarion. However, one of these children broke Apsu’s heart during that time. Instead of wanting to create, his child, named Dahak, sought only to destroy. As much as it pained Apsu to fight his child, he could not let this world be destroyed senselessly, but when Apsu had gained the upper hand, his partner stopped him. Dahak then fled to Hell to nurse his wounds." +
-                "\n\nTo this day, Apsu continues to battle against the forces that seek to destroy this world, forever reminded of his failure to stop his child and the pain of Sarshallatu’s betrayal. Though he strives for peace, he knows that one day, he will have to confront Dahak once again and that all dragonkind will be involved in the inevitable conflict. Such a war would sweep across the Points of Light like a massive wildfire. Until that time, Apsu entreats mortal artists and leaders to make the world the best place it can possibly be. Somewhat ironically, when Apsu contemplates these acts of beauty and harmony, he grows ever more despondent about his fated battle against his son. ",
-                "{b}•Edicts{/b} Seek and destroy evil, travel the world, help others fend for themselves\n{b}•Anathema{/b} Fail to pursue a foe who has betrayed your mercy, attack a creature without certainty of wrongdoing",
+            Feat dyeusDeity = new DeitySelectionFeat(
+                ModManager.RegisterFeatName("Deity: Dyeus"),
+                "Ancient texts, older than memory and guarded by draconic sages, tell of Dyeus and his mate Teymatha—the first dragons. Together, they brought forth five children and shaped the mortal realm known as the Points of Light. But one child, Canak, turned from creation and sought only destruction.\n\nHeartbroken, Dyeus stood against his own son. Though it pained him to fight his blood, he would not let the world be undone. As he gained the upper hand, Teymatha intervened, allowing Canak to escape into the depths of Hell, wounded and vengeful.\n\nSince then, Dyeus has devoted himself to shielding other families from such tragedy. He watches where strife brews, guiding mortals toward reconciliation through subtle signs and quiet grace. Though he cannot undo his own loss, he finds hope in every bond preserved. Nonetheless, he prepares for the day when he must face Canak again, in a war that could consume all dragonkind.",
+                "{b}•Edicts{/b} Seek and destroy evil, travel the world, protect families\n{b}•Anathema{/b} Fail to pursue a foe who has betrayed your mercy, attack a creature without certainty of wrongdoing",
                 [NineCornerAlignment.NeutralGood, NineCornerAlignment.ChaoticGood, NineCornerAlignment.LawfulGood],
                 [FeatName.HealingFont], [FeatName.DomainFamily, FeatName.DomainTravel, ModData.FeatNames.ProtectionDomain, ModData.FeatNames.DragonDomain], ItemName.Staff, [SpellId.TrueStrike ,SpellId.Haste, SpellId.ReboundingBarrier], Skill.Diplomacy);
-            apsuDeity.Traits.Add(Trait.Homebrew);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric).Subfeats.Add(apsuDeity);
-            yield return apsuDeity;
+            dyeusDeity.Traits.Add(Trait.Homebrew);
+            AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric)?.Subfeats?.Add(dyeusDeity);
+            yield return dyeusDeity;
         }
         else
         {
@@ -236,7 +229,7 @@ public class DragonDeityDomain
                 [NineCornerAlignment.TrueNeutral, NineCornerAlignment.NeutralGood, NineCornerAlignment.LawfulNeutral, NineCornerAlignment.LawfulGood],
                 [FeatName.HealingFont], [FeatName.DomainAir, FeatName.DomainSun, FeatName.DomainFamily, ModData.FeatNames.DragonDomain], ItemName.Longspear, [SpellId.TrueStrike, SpellId.FalseLife ,SpellId.DeflectCriticalHit, SpellId.Stoneskin], Skill.Religion);
             tianDeity.Traits.Add(Trait.Homebrew);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric).Subfeats.Add(tianDeity);
+            AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric)?.Subfeats?.Add(tianDeity);
             yield return tianDeity;
         }
         Feat shenLongDeity = new DeitySelectionFeat(
@@ -246,14 +239,14 @@ public class DragonDeityDomain
             [NineCornerAlignment.TrueNeutral, NineCornerAlignment.NeutralGood, NineCornerAlignment.LawfulNeutral, NineCornerAlignment.ChaoticNeutral, NineCornerAlignment.LawfulGood],
             [FeatName.HealingFont, FeatName.HarmfulFont], [FeatName.DomainAir, FeatName.DomainLightning, FeatName.DomainWater, ModData.FeatNames.DragonDomain], ItemName.Whip, [SpellId.PushingGust, SpellId.ObscuringMist ,SpellId.LightningBolt, SpellId.DrawTheLightning], Skill.Nature);
         shenLongDeity.Traits.Add(Trait.Homebrew);
-        AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric).Subfeats.Add(shenLongDeity);
+        AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric)?.Subfeats?.Add(shenLongDeity);
         yield return shenLongDeity;
     }
 
     static QEffect CreateBarrageLogic(CombatAction spell, DamageKind damageType)
     {
         DamageKind damageKind = damageType;
-        Debug.Assert(spell.ChosenVariant != null, "spell.ChosenVariant != null");
+        Debug.Assert(spell.ChosenVariant != null);
         QEffect barrageLogic = new()
         {
             Id = ModData.QEffectIds.DraconicBarrage,
@@ -304,7 +297,7 @@ public class DragonDeityDomain
                 });
             return new ActionPossibility(change);
             },
-            AddExtraStrikeDamage = (strike, innerSelf) =>
+            AddExtraStrikeDamage = (strike, _) =>
             {
                 if (!strike.HasTrait(Trait.Unarmed) && !strike.HasTrait(Trait.Weapon))
                     return null;
@@ -343,7 +336,7 @@ public class DragonDeityDomain
         SpellId advancedSpell = (SpellId)domainFeat.Tag!;
         Spell spell = AllSpells.CreateModernSpellTemplate(advancedSpell, forClass);
         Feat advancedDomain = new TrueFeat(ModManager.RegisterFeatName("AdvancedDomain:" + forClass.HumanizeTitleCase2() + ":" + name, name + ": " + spell.Name), 8, "Your studies or prayers have unlocked deeper secrets of the " + name.ToLower() + " domain.",
-                $"You learn the {forClass.HumanizeTitleCase2().ToLower()} focus spell " + AllSpells.CreateSpellLink(advancedSpell, forClass) + ", and you gain 1 focus point, up to a maximum 3.", [forClass], null)
+                $"You learn the {forClass.HumanizeTitleCase2().ToLower()} focus spell " + AllSpells.CreateSpellLink(advancedSpell, forClass) + ", and you gain 1 focus point, up to a maximum 3.", [forClass])
             .WithIllustration(spell.Illustration)
             .WithRulesBlockForSpell(advancedSpell, forClass)
             .WithPrerequisite(values => values.HasFeat(domainFeat.FeatName), "You must have the " + name + " domain.")
