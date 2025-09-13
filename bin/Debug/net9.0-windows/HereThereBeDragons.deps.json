@@ -9,7 +9,7 @@
       "HereThereBeDragons/1.0.0": {
         "dependencies": {
           "Common": "1.0.0.0",
-          "Dawnsbury Days": "3.48.0.0",
+          "Dawnsbury Days": "3.54.0.0",
           "MonoGame.Framework": "3.8.1.303"
         },
         "runtime": {
@@ -24,11 +24,11 @@
           }
         }
       },
-      "Dawnsbury Days/3.48.0.0": {
+      "Dawnsbury Days/3.54.0.0": {
         "runtime": {
           "Dawnsbury Days.dll": {
-            "assemblyVersion": "3.48.0.0",
-            "fileVersion": "3.48.0.0"
+            "assemblyVersion": "3.54.0.0",
+            "fileVersion": "3.54.0.0"
           }
         }
       },
@@ -52,7 +52,7 @@
         "runtime": {
           "System.Windows.Forms.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16312"
+            "fileVersion": "9.0.825.36801"
           }
         },
         "resources": {
@@ -141,7 +141,7 @@
         "runtime": {
           "System.Windows.Forms.Design.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16312"
+            "fileVersion": "9.0.825.36801"
           }
         },
         "resources": {
@@ -214,7 +214,7 @@
         "runtime": {
           "System.Drawing.Common.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16312"
+            "fileVersion": "9.0.825.36801"
           }
         }
       },
@@ -254,7 +254,7 @@
         "runtime": {
           "System.Windows.Forms.Primitives.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16312"
+            "fileVersion": "9.0.825.36801"
           }
         },
         "resources": {
@@ -327,7 +327,7 @@
         "runtime": {
           "System.Private.Windows.Core.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16312"
+            "fileVersion": "9.0.825.36801"
           }
         }
       },
@@ -335,7 +335,7 @@
         "runtime": {
           "Accessibility.dll": {
             "assemblyVersion": "4.0.0.0",
-            "fileVersion": "9.0.425.16312"
+            "fileVersion": "9.0.825.36801"
           }
         }
       },
@@ -343,7 +343,7 @@
         "runtime": {
           "Microsoft.Win32.SystemEvents.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16305"
+            "fileVersion": "9.0.825.36511"
           }
         }
       },
@@ -351,7 +351,7 @@
         "runtime": {
           "System.Configuration.ConfigurationManager.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16305"
+            "fileVersion": "9.0.825.36511"
           }
         }
       },
@@ -359,7 +359,7 @@
         "runtime": {
           "System.Formats.Nrbf.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16305"
+            "fileVersion": "9.0.825.36511"
           }
         }
       },
@@ -367,7 +367,7 @@
         "runtime": {
           "System.Windows.Extensions.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16305"
+            "fileVersion": "9.0.825.36511"
           }
         }
       },
@@ -375,7 +375,7 @@
         "runtime": {
           "System.CodeDom.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16305"
+            "fileVersion": "9.0.825.36511"
           }
         }
       },
@@ -399,7 +399,7 @@
         "runtime": {
           "System.Diagnostics.EventLog.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16305"
+            "fileVersion": "9.0.825.36511"
           }
         }
       },
@@ -407,7 +407,7 @@
         "runtime": {
           "System.Security.Cryptography.ProtectedData.dll": {
             "assemblyVersion": "9.0.0.0",
-            "fileVersion": "9.0.425.16305"
+            "fileVersion": "9.0.825.36511"
           }
         }
       }
@@ -424,7 +424,7 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Dawnsbury Days/3.48.0.0": {
+    "Dawnsbury Days/3.54.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""

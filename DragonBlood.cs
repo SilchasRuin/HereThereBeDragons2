@@ -228,7 +228,7 @@ public abstract class DragonBlood
     private static void CreateBreathLogic(TrueFeat breathWeapon)
     {
         breathWeapon.WithActionCost(2)
-            .WithPrerequisite((sheet) => !sheet.HasFeat(ModData.FeatNames.Unknown) && sheet.AllFeats.Exists(feat => feat.HasTrait(ModData.Traits.DraconicExemplar)), "You must select a draconic exemplar.")
+            .WithPrerequisite(sheet => !sheet.HasFeat(ModData.FeatNames.Unknown) && sheet.AllFeats.Exists(feat => feat.HasTrait(ModData.Traits.DraconicExemplar)), "You must select a draconic exemplar.")
             .WithOnCreature((sheet, creature) =>
     {
       Feat? feat = sheet.AllFeats.FirstOrDefault(ft => ft.HasTrait(ModData.Traits.DraconicExemplar) && ft.FeatName != ModData.FeatNames.Unknown);
@@ -267,7 +267,7 @@ public abstract class DragonBlood
                       .WithEffectOnEachTarget(
                           async (spell, caster, target, result) => await CommonSpellEffects.DealBasicDamage(spell,
                               caster,
-                              target, result, ((caster.Level + 1) / 2).ToString() + "d4", DetermineDamageKind(feat)))
+                              target, result, ((caster.Level + 1) / 2) + "d4", DetermineDamageKind(feat)))
                       .WithEffectOnChosenTargets((_, caster, _) =>
                           Task.FromResult(
                               caster.AddQEffect(QEffect.CannotUseForXRound("Breath Weapon", caster, R.Next(2, 5))))))
@@ -282,7 +282,7 @@ public abstract class DragonBlood
                   .WithEffectOnEachTarget(
                       async (spell, caster, target, result) => await CommonSpellEffects.DealBasicDamage(spell,
                           caster,
-                          target, result, ((caster.Level + 1) / 2).ToString() + "d6", DetermineDamageKind(feat)))
+                          target, result, ((caster.Level + 1) / 2) + "d6", DetermineDamageKind(feat)))
                   .WithEffectOnChosenTargets((_, caster, _) =>
                       Task.FromResult(
                           caster.AddQEffect(QEffect.CannotUseForXRound("Breath Weapon", caster, R.Next(2, 5))))))
@@ -536,6 +536,7 @@ public abstract class DragonBlood
                     qfThis.Owner.Battle.AllCreatures.Where(cr => cr.DistanceTo(qfThis.Owner) <= 6)
                         .ForEach(cr => cr.DetectionStatus.Undetected = false);
                 };
+                
             }
         );
     }
@@ -663,8 +664,8 @@ public abstract class DragonBlood
             [ModData.Traits.AspectWeapon], null);
         draconicClaws.WithOnCreature(self =>
         {
-            Item claws = CommonItems.CreateNaturalWeapon(IllustrationName.DragonClaws, "claws",
-                "1d4", DamageKind.Slashing, Trait.Agile, Trait.Finesse, Trait.Unarmed, Trait.Brawling);
+            Item claws = new Item(ModData.Illustrations.DragonClaws, "claws",
+                 Trait.Agile, Trait.Finesse, Trait.Unarmed, Trait.Brawling).WithWeaponProperties(new WeaponProperties("1d4", DamageKind.Slashing));
             if (self.HasFeat(ModData.FeatNames.DeadlyAspect))
                 claws.Traits.Add(Trait.DeadlyD8);
             if (self.HasFreeHand)

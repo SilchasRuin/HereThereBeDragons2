@@ -49,6 +49,7 @@ public class ModData
         internal static Illustration MentalBarrageIllustration { get; } = new ModdedIllustration("HTDAssets/DraconicBarrageMental.png");
         internal static Illustration ElectricityBarrageIllustration { get; } = new ModdedIllustration("HTDAssets/DraconicBarrageElectricity.png");
         internal static Illustration DragonTail { get; } = new ModdedIllustration("HTDAssets/Tail.png");
+        internal static Illustration DragonClaws { get; } = new ModdedIllustration("HTDAssets/Claws.png");
     }
 
     internal static class ActionIds
