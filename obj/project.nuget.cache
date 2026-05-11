@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "Ard4W8yTyWk=",
+  "dgSpecHash": "khrgaIGGcJI=",
   "success": true,
   "projectFilePath": "C:\\Users\\jcbco\\RiderProjects\\HereThereBeDragons2\\HereThereBeDragons.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\jcbco\\.nuget\\packages\\microsoft.visualstudio.threading.analyzers\\17.14.15\\microsoft.visualstudio.threading.analyzers.17.14.15.nupkg.sha512"
+  ],
   "logs": []
 }

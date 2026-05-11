@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Dawnsbury.Audio;
 using Dawnsbury.Core;
+using Dawnsbury.Core.Animations.AuraAnimations;
 using Dawnsbury.Core.CharacterBuilder.Feats;
 using Dawnsbury.Core.CharacterBuilder.FeatsDb;
 using Dawnsbury.Core.CharacterBuilder.FeatsDb.Common;
@@ -21,34 +22,35 @@ using Dawnsbury.Display.Illustrations;
 using Dawnsbury.Display.Text;
 using Dawnsbury.Modding;
 using Microsoft.Xna.Framework;
+using SpiritDamage;
 
 namespace HereThereBeDragons;
 
-public class DragonDeityDomain
+public static class DragonDeityDomain
 {
     internal static readonly SpellId DraconicBarrage = ModManager.RegisterNewSpell(
             "DraconicBarrage",
             1,
-            (_, _, spellLevel, _, _) =>
+            (_, _, spellLevel, inCombat, _) =>
             {
                 return Spells.CreateModern(
-                        ModData.Illustrations.DraconicBarrageIllustration,
+                        ModData.MIllustrations.DraconicBarrageIllustration,
                         "Draconic Barrage",
                         [Trait.Uncommon, Trait.Cleric, Trait.Focus],
                         "You shape energy into a small group of tiny dragons (or other serpentine creatures) that flit around you.",
-                        "Choose fire, force, mental, or electricity damage when you Cast the Spell. For the duration of the spell, your Strikes with weapons or unarmed attacks deal 1 additional damage of the chosen type, as the dragons add their energy to your attacks." +
-                        "\n\nYou can Sustain the spell to change the damage type. In addition, you can Sustain the spell to have the dragons fly off to bombard a creature within 60 feet. That creature takes 2d4 damage of the chosen type (basic Reflex save). Once the dragons have been used in this way, they wink out of existence and the spell ends." +
-                        "\n\n{b}Heightened (+1){/b} The additional amount of damage from the dragons increases by 1 and the damage dealt by the dragons' bombardment increases by 2d4.",
+                        $"Choose fire, force, mental, or spirit damage when you Cast the Spell. For the duration of the spell, your Strikes with weapons or unarmed attacks deal {S.HeightenedVariable(spellLevel, 1)} additional damage of the chosen type, as the dragons add their energy to your attacks." +
+                        $"\n\nYou can Sustain the spell to change the damage type. In addition, you can Sustain the spell to have the dragons fly off to bombard a creature within 60 feet. That creature takes {S.HeightenedVariable(2*spellLevel, 2)}d4 damage of the chosen type (basic Reflex save). Once the dragons have been used in this way, they wink out of existence and the spell ends.",
                         Target.Self(),
                         spellLevel,
                         null)
                     .WithActionCost(2)
                     .WithSoundEffect(SfxName.MagicWeapon)
+                    .WithHeighteningNumerical(spellLevel, 1, inCombat, 1, "The additional amount of damage from the dragons increases by 1 and the damage dealt by the dragons' bombardment increases by 2d4." )
                     .WithVariants([
-                        new SpellVariant("FIRE", "Fire Barrage", ModData.Illustrations.DraconicBarrageIllustration),
-                        new SpellVariant("FORCE", "Force Barrage", ModData.Illustrations.ForceBarrageIllustration),
-                        new SpellVariant("MENTAL", "Mental Barrage", ModData.Illustrations.MentalBarrageIllustration),
-                        new SpellVariant("ELECTRICITY", "Electricity Barrage", ModData.Illustrations.ElectricityBarrageIllustration)
+                        new SpellVariant("FIRE", "Fire Barrage", ModData.MIllustrations.DraconicBarrageIllustration),
+                        new SpellVariant("FORCE", "Force Barrage", ModData.MIllustrations.ForceBarrageIllustration),
+                        new SpellVariant("MENTAL", "Mental Barrage", ModData.MIllustrations.MentalBarrageIllustration),
+                        new SpellVariant("SPIRIT", "Spirit Barrage", ModData.MIllustrations.ElectricityBarrageIllustration)
                     ]).WithCreateVariantDescription((_, v) =>
                     {
                         string str4 = v?.Id switch
@@ -56,12 +58,11 @@ public class DragonDeityDomain
                             "FIRE" => "fire",
                             "FORCE" => "force",
                             "MENTAL" => "mental",
-                            "ELECTRICITY" => "electricity",
+                            "SPIRIT" => "spirit",
                             _ => "unknown"
                         };
-                        string str5 = str4;
                         return
-                            $"Your Strikes with weapons or unarmed attacks deal 1 additional {str5} damage, as the dragons add their energy to your attacks. You can Sustain the spell to change the damage type. In addition, you can Sustain the spell to have the dragons fly off to bombard a creature within 60 feet. That creature takes 2d4 {str5} damage (basic Reflex save). Once the dragons have been used in this way, they wink out of existence and the spell ends.\n\n" +
+                            $"Your Strikes with weapons or unarmed attacks deal 1 additional {str4} damage, as the dragons add their energy to your attacks. You can Sustain the spell to change the damage type. In addition, you can Sustain the spell to have the dragons fly off to bombard a creature within 60 feet. That creature takes 2d4 {str4} damage (basic Reflex save). Once the dragons have been used in this way, they wink out of existence and the spell ends.\n\n" +
                             "{b}Heightened (+1){/b} The additional amount of damage from the dragons increases by 1 and the damage dealt by the dragons' bombardment increases by 2d4.";
                     })
                     .WithEffectOnSelf((spell, self) =>
@@ -79,8 +80,8 @@ public class DragonDeityDomain
                             case "MENTAL":
                                 self.AddQEffect(CreateBarrageLogic(spell, DamageKind.Mental));
                                 break;
-                            case "ELECTRICITY":
-                                self.AddQEffect(CreateBarrageLogic(spell, DamageKind.Electricity));
+                            case "SPIRIT":
+                                self.AddQEffect(CreateBarrageLogic(spell, DamageSpirit.Spirit));
                                 break;
                         }
                         return Task.CompletedTask;
@@ -141,84 +142,83 @@ public class DragonDeityDomain
     public static readonly SpellId ProtectorsSphere = ModManager.RegisterNewSpell(
         "ProtectorsSphere",
         4,
-        (_, _, spellLevel, _, _) =>
+        (_, _, spellLevel, inCombat, _) =>
         {
             return Spells.CreateModern(
                     IllustrationName.CircleOfProtection,
                     "Protector's Sphere",
                     [Trait.Uncommon, Trait.Focus, Trait.Aura],
                     "A protective aura emanates out from you, safeguarding you and your allies.",
-                    "You gain resistance 3 to all damage. Your allies also gain this resistance while in the aura." +
-                    "\n\n{b}Heightened (+1){/b} The resistance increases by 1.",
+                    $"You gain resistance {S.HeightenedVariable(spellLevel-1, 3)} to all damage. Your allies also gain this resistance while in the aura.",
                     Target.Self(),
                     spellLevel,
                     null)
                 .WithActionCost(2)
+                .WithHeighteningNumerical(spellLevel, 4, inCombat, 1, "The resistance increases by 1.")
                 .WithEffectOnSelf(self =>
                     {
-                        self.AnimationData.AddAuraAnimation(IllustrationName.BlessCircle, 3f, Color.DarkViolet);
-                        self.AddQEffect(new QEffect().AddGrantingOfTechnical(nearby => 
+                        self.AddQEffect(new QEffect {
+                            SpawnsAura = _ => new MagicCircleAuraAnimation(IllustrationName.AngelicHaloCircleWhite, Color.DarkViolet, 3f) }
+                            .AddGrantingOfTechnical(nearby => 
                             nearby.DistanceTo(self) <= 3 && !nearby.HasTrait(Trait.Object) && nearby.FriendOf(self),
                             qfProtect =>
                             {
                                 qfProtect.Illustration = IllustrationName.CircleOfProtection;
                                 qfProtect.Name = "Protector's Sphere";
                                 qfProtect.Description = $"You gain resistance {(spellLevel-1).ToString()} to all damage.";
-                                qfProtect.Owner.AddQEffect(QEffect.DamageResistanceAllExcept(spellLevel - 1, []).WithExpirationEphemeral());
-                            }
-                            
-                                ));
+                                qfProtect.Owner.AddQEffect(QEffect.DamageResistanceAllExcept(spellLevel - 1).WithExpirationEphemeral());
+                            }));
                     }
                 );
         }
     );
     
-    public static IEnumerable<Feat> CreateDomainFeats()
+    public static void CreateDomainFeats()
     {
-        Feat dragonDomain = ClericClassFeatures.CreateDomain(ModData.FeatNames.DragonDomain, "You draw on the power of dragons, linnorms, and other powerful reptilian creatures.", DraconicBarrage, DragonRoar);
+        Feat dragonDomain = ClericClassFeatures.CreateDomain(ModData.MFeatNames.DragonDomain, "You draw on the power of dragons, linnorms, and other powerful reptilian creatures.", DraconicBarrage, DragonRoar);
         ClericClassFeatures.AllDomainFeats.Add(dragonDomain);
-        yield return dragonDomain;
+        ModManager.AddFeat(dragonDomain);
         Feat clericDomain1 = CreateAdvancedDomainFeat(Trait.Cleric, dragonDomain);
-        AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(clericDomain1);
-        yield return clericDomain1;
+        ModManager.AddFeat(clericDomain1);
+        AllFeats.GetFeatByFeatName(FeatName.AdvancedDomain).Subfeats?.Add(clericDomain1);
         Feat championDomain1 = CreateAdvancedDomainFeat(Trait.Champion, dragonDomain);
-        AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(championDomain1);
-        yield return championDomain1;
+        ModManager.AddFeat(championDomain1);
+        AllFeats.GetFeatByFeatName(FeatName.AdvancedDeitysDomain).Subfeats?.Add(championDomain1);
         Feat oracleDomain1 = CreateAdvancedDomainFeat(Trait.Oracle, dragonDomain);
-        AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(oracleDomain1);
-        yield return oracleDomain1;
+        ModManager.AddFeat(oracleDomain1);
+        AllFeats.GetFeatByFeatName(FeatName.DomainFluency).Subfeats?.Add(oracleDomain1);
         if (ModManager.TryParse("ProtectorsSacrifice", out SpellId protectorsSacrifice))
         {
-            Feat protectionDomain = ClericClassFeatures.CreateDomain(ModData.FeatNames.ProtectionDomain, "You ward yourself and others.", protectorsSacrifice, ProtectorsSphere);
+            Feat protectionDomain = ClericClassFeatures.CreateDomain(ModData.MFeatNames.ProtectionDomain, "You ward yourself and others.", protectorsSacrifice, ProtectorsSphere);
             ClericClassFeatures.AllDomainFeats.Add(protectionDomain);
-            yield return protectionDomain;
+            ModManager.AddFeat(protectionDomain);
             Feat clericDomain = CreateAdvancedDomainFeat(Trait.Cleric, protectionDomain);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(clericDomain);
-            yield return clericDomain;
+            ModManager.AddFeat(clericDomain);
+            AllFeats.GetFeatByFeatName(FeatName.AdvancedDomain).Subfeats?.Add(clericDomain);
             Feat championDomain = CreateAdvancedDomainFeat(Trait.Champion, protectionDomain);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(championDomain);
-            yield return championDomain;
+            ModManager.AddFeat(championDomain);
+            AllFeats.GetFeatByFeatName(FeatName.AdvancedDeitysDomain).Subfeats?.Add(championDomain);
             Feat oracleDomain = CreateAdvancedDomainFeat(Trait.Oracle, protectionDomain);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.AdvancedDeitysDomain)?.Subfeats?.Add(oracleDomain);
-            yield return oracleDomain;
+            ModManager.AddFeat(oracleDomain);
+            AllFeats.GetFeatByFeatName(FeatName.DomainFluency).Subfeats?.Add(oracleDomain);
             Feat tianDeity = new DeitySelectionFeat(
                 ModManager.RegisterFeatName("Deity: Tian"),
                 "Tian, the Highest Dragon, is a divine celestial being revered as a protector of the heavens and just rulership. Dwelling in the highest reaches of the celestial realm and often associated with the stars and the turning of the heavens, Tian represents both spiritual elevation and unyielding duty. Tian stands as a guardian of order and the eternal structure of the cosmos.\n\nOften invoked by emperors, astrologers, and heavenly dragons, Tian’s presence is felt in the arc of stars and the path of the sun. He is the ever-watchful sentinel who wards off demons from ascending to the celestial realm and ensures that mortal rulers do not defy the heavenly mandate.",
                 "{b}•Edicts{/b} Uphold cosmic and social order, act as a guardian to those under your protection, honor celestial phenomena, combat demonic or otherworldly threats that endanger the world.\n{b}•Anathema{/b} Disobey or defy rightful and just authority without cause, engage in behavior that undermines order, desecrate celestial sites or mock the heavens, aid fiends or aberrations in entering the material or celestial plane.",
                 [NineCornerAlignment.TrueNeutral, NineCornerAlignment.NeutralGood, NineCornerAlignment.LawfulNeutral, NineCornerAlignment.LawfulGood],
-                [FeatName.HealingFont], [FeatName.DomainAir, FeatName.DomainSun, ModData.FeatNames.ProtectionDomain, ModData.FeatNames.DragonDomain], ItemName.Longspear, [SpellId.TrueStrike, SpellId.FalseLife ,SpellId.DeflectCriticalHit, SpellId.Stoneskin], Skill.Religion);
+                [FeatName.HealingFont], [FeatName.DomainAir, FeatName.DomainSun, ModData.MFeatNames.ProtectionDomain, ModData.MFeatNames.DragonDomain], ItemName.Longspear, [SpellId.TrueStrike, SpellId.FalseLife ,SpellId.DeflectCriticalHit, SpellId.Stoneskin], Skill.Society);
             tianDeity.Traits.Add(Trait.Homebrew);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric)?.Subfeats?.Add(tianDeity);
-            yield return tianDeity;
+            AllFeats.GetFeatByFeatName(FeatName.Cleric).Subfeats?.Add(tianDeity);
+            ModManager.AddFeat(tianDeity);
             Feat dyeusDeity = new DeitySelectionFeat(
                 ModManager.RegisterFeatName("Deity: Dyeus"),
                 "Ancient texts, older than memory and guarded by draconic sages, tell of Dyeus and his mate Teymatha—the first dragons. Together, they brought forth five children and shaped the mortal realm known as the Points of Light. But one child, Canak, turned from creation and sought only destruction.\n\nHeartbroken, Dyeus stood against his own son. Though it pained him to fight his blood, he would not let the world be undone. As he gained the upper hand, Teymatha intervened, allowing Canak to escape into the depths of Hell, wounded and vengeful.\n\nSince then, Dyeus has devoted himself to shielding other families from such tragedy. He watches where strife brews, guiding mortals toward reconciliation through subtle signs and quiet grace. Though he cannot undo his own loss, he finds hope in every bond preserved. Nonetheless, he prepares for the day when he must face Canak again, in a war that could consume all dragonkind.",
                 "{b}•Edicts{/b} Seek and destroy evil, travel the world, protect families\n{b}•Anathema{/b} Fail to pursue a foe who has betrayed your mercy, attack a creature without certainty of wrongdoing",
                 [NineCornerAlignment.NeutralGood, NineCornerAlignment.ChaoticGood, NineCornerAlignment.LawfulGood],
-                [FeatName.HealingFont], [FeatName.DomainFamily, FeatName.DomainTravel, ModData.FeatNames.ProtectionDomain, ModData.FeatNames.DragonDomain], ItemName.Staff, [SpellId.TrueStrike ,SpellId.Haste, SpellId.ReboundingBarrier], Skill.Diplomacy);
+                [FeatName.HealingFont], [FeatName.DomainFamily, FeatName.DomainTravel, ModData.MFeatNames.ProtectionDomain, ModData.MFeatNames.DragonDomain], ItemName.Staff, [SpellId.TrueStrike ,SpellId.Haste, SpellId.ReboundingBarrier], Skill.Diplomacy);
             dyeusDeity.Traits.Add(Trait.Homebrew);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric)?.Subfeats?.Add(dyeusDeity);
-            yield return dyeusDeity;
+            AllFeats.GetFeatByFeatName(FeatName.Cleric).Subfeats?.Add(dyeusDeity);
+            ModManager.AddFeat(dyeusDeity);
         }
         else
         {
@@ -227,51 +227,50 @@ public class DragonDeityDomain
                 "Tian, the Highest Dragon, is a divine celestial being revered as a protector of the heavens and just rulership. Dwelling in the highest reaches of the celestial realm and often associated with the stars and the turning of the heavens, Tian represents both spiritual elevation and unyielding duty. Tian stands as a guardian of order and the eternal structure of the cosmos.\n\nOften invoked by emperors, astrologers, and heavenly dragons, Tian’s presence is felt in the arc of stars and the path of the sun. He is the ever-watchful sentinel who wards off demons from ascending to the celestial realm and ensures that mortal rulers do not defy the heavenly mandate.",
                 "{b}•Edicts{/b} Uphold cosmic and social order, act as a guardian to those under your protection, honor celestial phenomena, combat demonic or otherworldly threats that endanger the world.\n{b}•Anathema{/b} Disobey or defy rightful and just authority without cause, engage in behavior that undermines order, desecrate celestial sites or mock the heavens, aid fiends or aberrations in entering the material or celestial plane.",
                 [NineCornerAlignment.TrueNeutral, NineCornerAlignment.NeutralGood, NineCornerAlignment.LawfulNeutral, NineCornerAlignment.LawfulGood],
-                [FeatName.HealingFont], [FeatName.DomainAir, FeatName.DomainSun, FeatName.DomainFamily, ModData.FeatNames.DragonDomain], ItemName.Longspear, [SpellId.TrueStrike, SpellId.FalseLife ,SpellId.DeflectCriticalHit, SpellId.Stoneskin], Skill.Religion);
+                [FeatName.HealingFont], [FeatName.DomainAir, FeatName.DomainSun, FeatName.DomainFamily, ModData.MFeatNames.DragonDomain], ItemName.Longspear, [SpellId.TrueStrike, SpellId.FalseLife ,SpellId.DeflectCriticalHit, SpellId.Stoneskin], Skill.Society);
             tianDeity.Traits.Add(Trait.Homebrew);
-            AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric)?.Subfeats?.Add(tianDeity);
-            yield return tianDeity;
+            AllFeats.GetFeatByFeatName(FeatName.Cleric).Subfeats?.Add(tianDeity);
+            ModManager.AddFeat(tianDeity);
         }
         Feat shenLongDeity = new DeitySelectionFeat(
             ModManager.RegisterFeatName("Deity: Shen-Long"),
             "Shen-Long is the celestial dragon of storm and sky, the divine force responsible for summoning the clouds and bringing the life-giving rains that sustain the land. Revered as both a temperamental storm bringer and a generous provider, Shen-Long is deeply respected across agrarian societies, especially in eastern lands. In some imperial traditions, he is considered the dragon most closely tied to the Mandate of Heaven, embodying nature’s approval or discontent with rulers.\n\nAs a deity, Shen-Long values balance above all—between wet and dry, storm and calm, power and humility. His followers often serve as shamans, storm callers, or advisors to rulers, interpreting his will through the wind and sky.",
             "{b}•Edicts{/b} Protect and respect the natural balance of weather and seasons, offer prayers and rituals to ensure seasonal rains and calm storms, intervene when rulers act unjustly, especially if their misdeeds disturb the harmony of the land.\n{b}•Anathema{/b} Cause or support environmental destruction that disrupts rain patterns, use magic to unnaturally alter weather for personal gain or revenge, mock or exploit dragons or dragon-spirits, ignore omens in the wind, clouds, or storms",
             [NineCornerAlignment.TrueNeutral, NineCornerAlignment.NeutralGood, NineCornerAlignment.LawfulNeutral, NineCornerAlignment.ChaoticNeutral, NineCornerAlignment.LawfulGood],
-            [FeatName.HealingFont, FeatName.HarmfulFont], [FeatName.DomainAir, FeatName.DomainLightning, FeatName.DomainWater, ModData.FeatNames.DragonDomain], ItemName.Whip, [SpellId.PushingGust, SpellId.ObscuringMist ,SpellId.LightningBolt, SpellId.DrawTheLightning], Skill.Nature);
+            [FeatName.HealingFont, FeatName.HarmfulFont], [FeatName.DomainAir, FeatName.DomainLightning, FeatName.DomainWater, ModData.MFeatNames.DragonDomain], ItemName.Whip, [SpellId.PushingGust, SpellId.ObscuringMist ,SpellId.LightningBolt, SpellId.DrawTheLightning], Skill.Nature);
         shenLongDeity.Traits.Add(Trait.Homebrew);
-        AllFeats.All.Find(ft => ft.FeatName == FeatName.Cleric)?.Subfeats?.Add(shenLongDeity);
-        yield return shenLongDeity;
+        AllFeats.GetFeatByFeatName(FeatName.Cleric).Subfeats?.Add(shenLongDeity);
+        ModManager.AddFeat(shenLongDeity);
     }
 
-    static QEffect CreateBarrageLogic(CombatAction spell, DamageKind damageType)
+    private static QEffect CreateBarrageLogic(CombatAction spell, DamageKind damageType)
     {
         DamageKind damageKind = damageType;
         Debug.Assert(spell.ChosenVariant != null);
         QEffect barrageLogic = new()
         {
-            Id = ModData.QEffectIds.DraconicBarrage,
+            Id = ModData.MQEffectIds.DraconicBarrage,
             ProvideMainAction = qfThis =>
             {
                 Creature self = qfThis.Owner;
                 qfThis.Illustration = damageKind switch
                 {
-                    DamageKind.Fire => ModData.Illustrations.DraconicBarrageIllustration,
-                    DamageKind.Mental => ModData.Illustrations.MentalBarrageIllustration,
-                    DamageKind.Electricity => ModData.Illustrations.ElectricityBarrageIllustration,
-                    DamageKind.Force => ModData.Illustrations.ForceBarrageIllustration,
+                    DamageKind.Fire => ModData.MIllustrations.DraconicBarrageIllustration,
+                    DamageKind.Mental => ModData.MIllustrations.MentalBarrageIllustration,
+                    DamageKind.Force => ModData.MIllustrations.ForceBarrageIllustration,
                     _ => qfThis.Illustration
                 };
+                if (damageKind == DamageSpirit.Spirit)
+                    qfThis.Illustration = ModData.MIllustrations.ElectricityBarrageIllustration;
                 qfThis.Name = $"{damageKind.HumanizeTitleCase2()}" + " Barrage";
                 qfThis.Description = $"You deal additional {damageKind.HumanizeLowerCase2()} damage, you can sustain this spell to change the type or you can sustain and end this spell to deal damage.";
-                CombatAction change = CombatAction.CreateSimple(self, "Change Barrage Damage Type", Trait.Concentrate);
+                CombatAction change = CombatAction.CreateSimple(self, "Change Barrage Damage Type", Trait.Concentrate, Trait.SustainASpell);
                 change.Illustration = IllustrationName.BlueD20;
                 change.Description = "You can sustain this spell to change the damage type draconic barrage deals.";
-                List<DamageKind> damages = [DamageKind.Fire,DamageKind.Mental, DamageKind.Electricity, DamageKind.Force];
-                if (damages == null) throw new ArgumentNullException(nameof(damages));
+                List<DamageKind> damages = [DamageKind.Fire,DamageKind.Mental, DamageSpirit.Spirit, DamageKind.Force];
                 damages.Remove(damageKind);
                 List<string> damagesStr = [];
-                if (damagesStr == null) throw new ArgumentNullException(nameof(damagesStr));
-                damagesStr.AddRange(damages.Select(damageKind2 => damageKind2.ToString()));
+                damagesStr.AddRange(damages.Select(damageKind2 => damageKind2.ToStringOrTechnical()));
                 damagesStr.Add("cancel");
                 change.WithEffectOnSelf(async (action, innerSelf) =>
                 {
@@ -286,12 +285,13 @@ public class DragonDeityDomain
                         qfThis.Description = $"You deal additional {damages[chosenOption.Index].HumanizeLowerCase2()} damage, you can sustain this spell to change the type or you can sustain and end this spell to deal damage.";
                         qfThis.Illustration = damages[chosenOption.Index] switch
                         {
-                            DamageKind.Fire => ModData.Illustrations.DraconicBarrageIllustration,
-                            DamageKind.Mental => ModData.Illustrations.MentalBarrageIllustration,
-                            DamageKind.Electricity => ModData.Illustrations.ElectricityBarrageIllustration,
-                            DamageKind.Force => ModData.Illustrations.ForceBarrageIllustration,
+                            DamageKind.Fire => ModData.MIllustrations.DraconicBarrageIllustration,
+                            DamageKind.Mental => ModData.MIllustrations.MentalBarrageIllustration,
+                            DamageKind.Force => ModData.MIllustrations.ForceBarrageIllustration,
                             _ => qfThis.Illustration
                         };
+                        if (damages[chosenOption.Index] == DamageSpirit.Spirit)
+                            qfThis.Illustration = ModData.MIllustrations.ElectricityBarrageIllustration;
                     }
                     else action.RevertRequested = true;
                 });
@@ -308,9 +308,9 @@ public class DragonDeityDomain
             {
                 Creature caster = qfInner.Owner;
                 string damage = damageKind.HumanizeLowerCase2();
-                CombatAction barrage = CombatAction.CreateSimple(caster, "Unleash Draconic Barrage", Trait.Concentrate);
+                CombatAction barrage = CombatAction.CreateSimple(caster, "Unleash Draconic Barrage", Trait.Concentrate, Trait.SustainASpell);
                 barrage.Description = "{b}Range{/b} 60 feet\n\nA target within 60 feet takes " +
-                                      (spell.SpellLevel * 2).ToString() + "d4 " + damage +
+                                      spell.SpellLevel * 2 + "d4 " + damage +
                                       " damage (basic Reflex save). Once the dragons have been used in this way, they wink out of existence and the spell ends.";
                 barrage.SpellcastingSource = spell.SpellcastingSource;
                 barrage.WithActionCost(1);
@@ -320,9 +320,9 @@ public class DragonDeityDomain
                 barrage.WithEffectOnEachTarget(async (spell2, user, target, check) =>
                 {
                     await CommonSpellEffects.DealBasicDamage(spell2, user, target, check,
-                        (spell.SpellLevel * 2).ToString() + "d4", damageKind);
+                        spell.SpellLevel * 2 + "d4", damageKind);
                     user.RemoveAllQEffects(qfThis =>
-                        qfThis == qfThis.Owner.FindQEffect(ModData.QEffectIds.DraconicBarrage));
+                        qfThis == qfThis.Owner.FindQEffect(ModData.MQEffectIds.DraconicBarrage));
                 });
                 return new ActionPossibility(barrage);
             }
@@ -332,11 +332,11 @@ public class DragonDeityDomain
 
     private static Feat CreateAdvancedDomainFeat(Trait forClass, Feat domainFeat) 
     {
-        var name = domainFeat.Name;
+        string name = domainFeat.Name;
         SpellId advancedSpell = (SpellId)domainFeat.Tag!;
         Spell spell = AllSpells.CreateModernSpellTemplate(advancedSpell, forClass);
-        Feat advancedDomain = new TrueFeat(ModManager.RegisterFeatName("AdvancedDomain:" + forClass.HumanizeTitleCase2() + ":" + name, name + ": " + spell.Name), 8, "Your studies or prayers have unlocked deeper secrets of the " + name.ToLower() + " domain.",
-                $"You learn the {forClass.HumanizeTitleCase2().ToLower()} focus spell " + AllSpells.CreateSpellLink(advancedSpell, forClass) + ", and you gain 1 focus point, up to a maximum 3.", [forClass])
+        Feat advancedDomain = new Feat(ModManager.RegisterFeatName("AdvancedDomain:" + forClass.HumanizeTitleCase2() + ":" + name, name + ": " + spell.Name), "Your studies or prayers have unlocked deeper secrets of the " + name.ToLower() + " domain.",
+                $"You learn the {forClass.HumanizeTitleCase2().ToLower()} focus spell " + AllSpells.CreateSpellLink(advancedSpell, forClass) + ", and you gain 1 focus point, up to a maximum 3.", [], null)
             .WithIllustration(spell.Illustration)
             .WithRulesBlockForSpell(advancedSpell, forClass)
             .WithPrerequisite(values => values.HasFeat(domainFeat.FeatName), "You must have the " + name + " domain.")
@@ -347,11 +347,11 @@ public class DragonDeityDomain
                     case Trait.Cleric:
                         sheet.AddFocusSpellAndFocusPoint(Trait.Cleric, Ability.Wisdom, advancedSpell);
                         break;
-                    case Trait.Champion:
-                        sheet.AddFocusSpellAndFocusPoint(Trait.Champion, Ability.Charisma, advancedSpell);
-                        break;
                     case Trait.Oracle:
                         sheet.AddFocusSpellAndFocusPoint(Trait.Oracle, Ability.Charisma, advancedSpell);
+                        break;
+                    case Trait.Champion:
+                        sheet.AddFocusSpellAndFocusPoint(Trait.Champion, Ability.Charisma, advancedSpell);
                         break;
                 }
             });
