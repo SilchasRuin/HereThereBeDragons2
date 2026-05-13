@@ -30,7 +30,7 @@ public static class DragonDeityDomain
 {
     internal static readonly SpellId DraconicBarrage = ModManager.RegisterNewSpell(
             "DraconicBarrage",
-            1,
+            0,
             (_, _, spellLevel, inCombat, _) =>
             {
                 return Spells.CreateModern(
@@ -91,7 +91,7 @@ public static class DragonDeityDomain
 
     public static readonly SpellId DragonRoar = ModManager.RegisterNewSpell(
             "RoarOfTheDragon",
-            4,
+            0,
             (_, _, spellLevel, _, _) =>
             {
                 return Spells.CreateModern(
@@ -141,7 +141,7 @@ public static class DragonDeityDomain
 
     public static readonly SpellId ProtectorsSphere = ModManager.RegisterNewSpell(
         "ProtectorsSphere",
-        4,
+        0,
         (_, _, spellLevel, inCombat, _) =>
         {
             return Spells.CreateModern(

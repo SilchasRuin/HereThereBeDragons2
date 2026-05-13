@@ -527,8 +527,7 @@ public static class DragonBlood
                 "You cannot take this feat and Draconic Aspect.")
             .WithPermanentQEffect(null, selfQf =>
             {
-                Item createdArmor = new Item(new ModdedIllustration("HTDAssets/Scale.png"), "Scaly Hide",
-                        [Trait.Armor, Trait.UnarmoredDefense, Trait.Cloth])
+                Item createdArmor = new Item(new ModdedIllustration("HTDAssets/Scale.png"), "Scaly Hide", Trait.Armor, Trait.UnarmoredDefense, Trait.Cloth)
                     .WithArmorProperties(new ArmorProperties(selfQf.Owner.Level < 5 ? 1 : 2, 3, 0, 0, 10));
                 ReplicateArmorRunes(selfQf.Owner, createdArmor);
                 if (!selfQf.Owner.Armor.WearsArmor)
@@ -1229,9 +1228,7 @@ public static class DragonBlood
 
     private static int SetSpeed(int speed)
     {
-        var ints = new List<int>();
-        if (ints == null) throw new ArgumentNullException(nameof(ints));
-        ints.Add(speed);
+        List<int> ints = [speed];
         return ints.FirstOrDefault();
     }
 
